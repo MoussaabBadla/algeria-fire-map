@@ -48,6 +48,36 @@ export function passesFilter(p: { confidence: Confidence; frp: number }, key: Fi
   return p.confidence === "high" && p.frp >= 15;
 }
 
+// Human-readable explanation of the "Confirmed" methodology (shown in a popover).
+export const CONFIRMED_EXPLAINER =
+  "We show only Confirmed fires: NASA FIRMS detections flagged high-confidence with a fire radiative power of 15 MW or more. " +
+  "This removes low-confidence noise and small agricultural burns, leaving detections that are almost certainly real, active wildfires.";
+
+// ---- Timing / recency ----
+export type DurationKey = "live" | "24h" | "48h";
+
+export interface DurationDef {
+  key: DurationKey;
+  label: string;
+  apiDays: number; // days to request from the API
+  maxAgeHours: number; // client-side recency cutoff
+}
+
+export const DURATIONS: DurationDef[] = [
+  { key: "live", label: "Live", apiDays: 1, maxAgeHours: 6 },
+  { key: "24h", label: "24h", apiDays: 1, maxAgeHours: 24 },
+  { key: "48h", label: "48h", apiDays: 2, maxAgeHours: 48 },
+];
+
+export function durationFor(key: DurationKey): DurationDef {
+  return DURATIONS.find((d) => d.key === key) ?? DURATIONS[1];
+}
+
+export function withinAge(iso: string | null, maxAgeHours: number): boolean {
+  if (!iso) return true;
+  return Date.now() - new Date(iso).getTime() <= maxAgeHours * 3600_000;
+}
+
 const CONFIDENCE_META: Record<Confidence, { label: string; color: string }> = {
   low: { label: "Low", color: "#a4a7b2" },
   nominal: { label: "Nominal", color: "#ffa630" },
