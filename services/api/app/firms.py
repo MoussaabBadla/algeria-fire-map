@@ -12,9 +12,25 @@ from __future__ import annotations
 
 import csv
 import io
+import json
+import os
 from datetime import datetime, timezone
 
 import httpx
+from shapely.geometry import Point, shape
+from shapely.prepared import prep
+
+# Algeria border polygon — used to clip out fires that fall in neighbouring
+# countries (a bounding box can't match the country shape, so e.g. Tunisian
+# border fires were being counted toward Souk Ahras). Small outward buffer
+# keeps genuine Algerian border fires despite polygon simplification.
+_BORDER_PATH = os.path.join(os.path.dirname(__file__), "algeria_border.json")
+with open(_BORDER_PATH, encoding="utf-8") as _bf:
+    _ALGERIA = prep(shape(json.load(_bf)).buffer(0.01))
+
+
+def _in_algeria(lng: float, lat: float) -> bool:
+    return _ALGERIA.contains(Point(lng, lat))
 
 FIRMS_BASE = "https://firms.modaps.eosdis.nasa.gov/api/area/csv"
 
@@ -131,6 +147,9 @@ async def fetch_fires_geojson(map_key: str, days: int = 1) -> dict:
     features: list[dict] = []
     for source_features in results:
         features.extend(source_features)
+
+    # Clip to Algeria's actual borders (drops neighbouring-country fires).
+    features = [f for f in features if _in_algeria(f["geometry"]["coordinates"][0], f["geometry"]["coordinates"][1])]
 
     return {
         "type": "FeatureCollection",
