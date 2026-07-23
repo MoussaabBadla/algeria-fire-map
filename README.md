@@ -14,9 +14,11 @@ Open source · MIT licensed · Built with NASA FIRMS, Open-Meteo & OpenStreetMap
 
 <div align="center">
 
-<img src="docs/screenshots/desktop-satellite.png" alt="Satellite view" width="49%"> <img src="docs/screenshots/mobile.png" alt="Mobile view" width="24%">
+<img src="docs/screenshots/desktop-risk.png" alt="Fire-risk (FWI) view" width="49%"> <img src="docs/screenshots/desktop-satellite.png" alt="Satellite view" width="49%">
 
-<sub>Live fires over satellite imagery · mobile, map-first UX</sub>
+<img src="docs/screenshots/mobile.png" alt="Mobile view" width="24%">
+
+<sub>Fire-weather risk (FWI) by wilaya · live fires over satellite · mobile, map-first UX</sub>
 
 </div>
 
