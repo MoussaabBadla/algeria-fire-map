@@ -40,9 +40,9 @@ export default function FireDashboard() {
 
   const [rankingOpen, setRankingOpen] = useState(false);
   const [historyMode, setHistoryMode] = useState(false);
-  const [historyAnchor, setHistoryAnchor] = useState<number | null>(null);
   const [cursor, setCursor] = useState(0);
   const [playing, setPlaying] = useState(false);
+  const needInit = useRef(false);
 
   const dur = durationFor(duration);
 
@@ -56,14 +56,35 @@ export default function FireDashboard() {
     keepPreviousData: true,
   });
 
-  const minTime = historyAnchor != null ? historyAnchor - SEVEN_DAYS : 0;
-  const maxTime = historyAnchor ?? 0;
-
   // 7-day confirmed fires (for the timeline histogram).
   const historyConfirmed = useMemo(
     () => (historyData ? historyData.features.filter((f) => passesFilter(f.properties, "confirmed")) : []),
     [historyData]
   );
+
+  // Timeline range comes from the actual detection times (satellite data lags
+  // wall-clock, so "now" is often empty). Cursor starts at the latest detection.
+  const { minTime, maxTime } = useMemo(() => {
+    let lo = Infinity;
+    let hi = -Infinity;
+    for (const f of historyConfirmed) {
+      const iso = f.properties.acq_datetime;
+      if (!iso) continue;
+      const t = new Date(iso).getTime();
+      if (t < lo) lo = t;
+      if (t > hi) hi = t;
+    }
+    if (!isFinite(lo)) return { minTime: Date.now() - SEVEN_DAYS, maxTime: Date.now() };
+    return { minTime: lo, maxTime: hi };
+  }, [historyConfirmed]);
+
+  // Initialise the cursor to the latest detection once history data arrives.
+  useEffect(() => {
+    if (historyMode && needInit.current && historyConfirmed.length) {
+      needInit.current = false;
+      setCursor(maxTime);
+    }
+  }, [historyMode, historyConfirmed.length, maxTime]);
 
   // Currently displayed fires: history window or live recency.
   const displayed = useMemo<FireCollection | undefined>(() => {
@@ -89,22 +110,20 @@ export default function FireDashboard() {
 
   // Playback loop.
   useEffect(() => {
-    if (!playing || !historyMode || historyAnchor == null) return;
-    const min = historyAnchor - SEVEN_DAYS;
-    const max = historyAnchor;
-    const step = (max - min) / PLAYBACK_STEPS;
+    if (!playing || !historyMode) return;
+    const step = (maxTime - minTime) / PLAYBACK_STEPS;
     const id = setInterval(() => {
       setCursor((c) => {
         const n = c + step;
-        if (n >= max) {
+        if (n >= maxTime) {
           setPlaying(false);
-          return max;
+          return maxTime;
         }
         return n;
       });
     }, PLAYBACK_TICK);
     return () => clearInterval(id);
-  }, [playing, historyMode, historyAnchor]);
+  }, [playing, historyMode, minTime, maxTime]);
 
   const flyTo = (lng: number, lat: number, zoom: number) => {
     focusNonce.current += 1;
@@ -117,9 +136,7 @@ export default function FireDashboard() {
   };
 
   const enterHistory = () => {
-    const now = Date.now();
-    setHistoryAnchor(now);
-    setCursor(now);
+    needInit.current = true;
     setHistoryMode(true);
     setPlaying(false);
     setRankingOpen(false);
@@ -129,7 +146,6 @@ export default function FireDashboard() {
   const exitHistory = () => {
     setHistoryMode(false);
     setPlaying(false);
-    setHistoryAnchor(null);
   };
 
   const togglePlay = () => {
