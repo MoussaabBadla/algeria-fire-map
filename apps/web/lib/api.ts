@@ -35,6 +35,13 @@ export interface FireCollection {
   properties: FireCollectionMeta;
 }
 
+export interface SelectedFire {
+  id: number | string;
+  lng: number;
+  lat: number;
+  properties: FireProperties;
+}
+
 export async function fetchFires(url: string): Promise<FireCollection> {
   const res = await fetch(url);
   if (!res.ok) {
