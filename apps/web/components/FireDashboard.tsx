@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import dynamic from "next/dynamic";
 import useSWR from "swr";
-import { fetchFires, firesKey, type FireCollection, type SelectedFire } from "@/lib/api";
+import { fetchFires, fetchRisk, firesKey, riskKey, type FireCollection, type RiskData, type RiskWilaya, type SelectedFire } from "@/lib/api";
 import { durationFor, passesFilter, withinAge, type DurationKey } from "@/lib/fire";
 import { rankWilayas, type WilayaCount } from "@/lib/wilayaAssign";
 import type { MapStyleKey } from "@/lib/mapStyles";
@@ -13,6 +13,8 @@ import Legend from "./Legend";
 import FireDetailPanel from "./FireDetailPanel";
 import WilayaRanking from "./WilayaRanking";
 import TimelineScrubber from "./TimelineScrubber";
+import RiskLegend from "./RiskLegend";
+import RiskPanel from "./RiskPanel";
 
 const FireMap = dynamic(() => import("./FireMap"), {
   ssr: false,
@@ -40,6 +42,7 @@ export default function FireDashboard() {
   const focusNonce = useRef(0);
 
   const [rankingOpen, setRankingOpen] = useState(false);
+  const [showRisk, setShowRisk] = useState(false);
   const [historyMode, setHistoryMode] = useState(false);
   const [cursor, setCursor] = useState(0);
   const [playing, setPlaying] = useState(false);
@@ -53,6 +56,11 @@ export default function FireDashboard() {
     keepPreviousData: true,
   });
   const { data: historyData } = useSWR<FireCollection>(historyMode ? firesKey(HISTORY_DAYS) : null, fetchFires, {
+    revalidateOnFocus: false,
+    keepPreviousData: true,
+  });
+  const { data: riskData } = useSWR<RiskData>(showRisk ? riskKey() : null, fetchRisk, {
+    refreshInterval: 30 * 60 * 1000,
     revalidateOnFocus: false,
     keepPreviousData: true,
   });
@@ -136,6 +144,11 @@ export default function FireDashboard() {
     setRankingOpen(false);
   };
 
+  const selectRiskWilaya = (w: RiskWilaya) => {
+    flyTo(w.lng, w.lat, 8.2);
+    setRankingOpen(false);
+  };
+
   const enterHistory = () => {
     needInit.current = true;
     setHistoryMode(true);
@@ -160,7 +173,7 @@ export default function FireDashboard() {
 
   return (
     <main style={{ position: "fixed", inset: 0, background: "var(--bg)" }}>
-      <FireMap data={displayed} selected={selected} onSelect={setSelected} styleKey={styleKey} isMobile={isMobile} focus={focus} />
+      <FireMap data={displayed} selected={selected} onSelect={setSelected} styleKey={styleKey} isMobile={isMobile} focus={focus} riskData={riskData} showRisk={showRisk} />
 
       <TopBar
         isMobile={isMobile}
@@ -179,12 +192,24 @@ export default function FireDashboard() {
         historyMode={historyMode}
         onEnterHistory={enterHistory}
         onToggleRanking={() => setRankingOpen((v) => !v)}
+        showRisk={showRisk}
+        onToggleRisk={() => setShowRisk((v) => !v)}
       />
 
-      {!isMobile && <Legend />}
+      {!isMobile && (showRisk ? <RiskLegend /> : <Legend />)}
 
-      {!isMobile && !selected && !historyMode && <WilayaRanking items={ranking} onSelect={selectWilaya} isMobile={false} />}
-      {isMobile && rankingOpen && <WilayaRanking items={ranking} onSelect={selectWilaya} isMobile onClose={() => setRankingOpen(false)} />}
+      {!isMobile && !selected && !historyMode &&
+        (showRisk ? (
+          <RiskPanel items={riskData?.wilayas ?? []} onSelect={selectRiskWilaya} isMobile={false} />
+        ) : (
+          <WilayaRanking items={ranking} onSelect={selectWilaya} isMobile={false} />
+        ))}
+      {isMobile && rankingOpen &&
+        (showRisk ? (
+          <RiskPanel items={riskData?.wilayas ?? []} onSelect={selectRiskWilaya} isMobile onClose={() => setRankingOpen(false)} />
+        ) : (
+          <WilayaRanking items={ranking} onSelect={selectWilaya} isMobile onClose={() => setRankingOpen(false)} />
+        ))}
 
       {historyMode && historyData && (
         <TimelineScrubber

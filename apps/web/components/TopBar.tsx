@@ -4,6 +4,7 @@ import { DURATIONS, type DurationKey } from "@/lib/fire";
 import { MAP_STYLES, type MapStyleKey } from "@/lib/mapStyles";
 import Segmented from "./Segmented";
 import StatBadge from "./StatBadge";
+import RiskLegend from "./RiskLegend";
 import { ClockIcon, FlameIcon } from "./Icons";
 
 interface Props {
@@ -20,6 +21,8 @@ interface Props {
   historyMode: boolean;
   onEnterHistory: () => void;
   onToggleRanking: () => void;
+  showRisk: boolean;
+  onToggleRisk: () => void;
 }
 
 const styleOpts = MAP_STYLES.map((s) => ({ key: s.key, label: s.label }));
@@ -82,8 +85,14 @@ const secondaryBtn: React.CSSProperties = {
   cursor: "pointer",
 };
 
+const activeToggle: React.CSSProperties = {
+  border: "1px solid rgba(255,122,26,0.5)",
+  background: "rgba(255,122,26,0.14)",
+  color: "#ff9e3d",
+};
+
 export default function TopBar(props: Props) {
-  const { isMobile, styleKey, onStyleChange, duration, onDurationChange, historyMode, onEnterHistory, onToggleRanking } = props;
+  const { isMobile, styleKey, onStyleChange, duration, onDurationChange, historyMode, onEnterHistory, onToggleRanking, showRisk, onToggleRisk } = props;
 
   if (isMobile) {
     return (
@@ -98,12 +107,13 @@ export default function TopBar(props: Props) {
 
         {!historyMode && (
           <div className="glass animate-in" style={{ position: "absolute", left: 12, right: 12, bottom: "calc(12px + env(safe-area-inset-bottom))", zIndex: 20, padding: 12, display: "flex", flexDirection: "column", gap: 8 }}>
-            <InlineLegend />
+            {showRisk ? <RiskLegend horizontal /> : <InlineLegend />}
             <Segmented options={durationOpts} value={duration} onChange={onDurationChange} big />
             <Segmented options={styleOpts} value={styleKey} onChange={onStyleChange} big />
             <div style={{ display: "flex", gap: 8 }}>
-              <button style={secondaryBtn} onClick={onToggleRanking}>Most affected</button>
-              <button style={secondaryBtn} onClick={onEnterHistory}><ClockIcon size={15} /> Replay 5 days</button>
+              <button style={secondaryBtn} onClick={onToggleRanking}>{showRisk ? "Top risk" : "Affected"}</button>
+              <button style={{ ...secondaryBtn, ...(showRisk ? activeToggle : {}) }} onClick={onToggleRisk}>Risk</button>
+              <button style={secondaryBtn} onClick={onEnterHistory}><ClockIcon size={15} /> Replay</button>
             </div>
             <div style={{ fontSize: 9.5, color: "var(--text-muted)", textAlign: "center", opacity: 0.8 }}>
               Map © OpenStreetMap · Esri · Fires: NASA FIRMS
@@ -132,6 +142,9 @@ export default function TopBar(props: Props) {
         <div style={{ fontSize: 10.5, textTransform: "uppercase", letterSpacing: "0.06em", color: "var(--text-muted)", marginBottom: 6 }}>Period</div>
         <Segmented options={durationOpts} value={duration} onChange={onDurationChange} />
       </div>
+      <button style={{ ...secondaryBtn, width: "100%", marginBottom: 8, ...(showRisk ? activeToggle : {}) }} onClick={onToggleRisk}>
+        <FlameIcon size={14} color={showRisk ? "#ff9e3d" : "var(--text-secondary)"} /> Fire risk (FWI){showRisk ? " · on" : ""}
+      </button>
       {!historyMode && (
         <button style={{ ...secondaryBtn, width: "100%" }} onClick={onEnterHistory}>
           <ClockIcon size={15} /> Replay last 5 days
