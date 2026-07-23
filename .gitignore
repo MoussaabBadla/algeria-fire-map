@@ -37,3 +37,7 @@ models/
 
 # Vercel
 .vercel
+
+# Test artifacts
+.playwright-mcp/
+*.png
