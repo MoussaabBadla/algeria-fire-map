@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import dynamic from "next/dynamic";
 import useSWR from "swr";
-import { fetchFires, fetchRisk, firesKey, riskKey, type FireCollection, type RiskData, type RiskWilaya, type SelectedFire } from "@/lib/api";
+import { fetchFires, fetchRisk, firesKey, riskKey, type FireCollection, type FireFeature, type RiskData, type RiskWilaya, type SelectedFire } from "@/lib/api";
 import { durationFor, passesFilter, withinAge, type DurationKey } from "@/lib/fire";
 import { rankWilayas, type WilayaCount } from "@/lib/wilayaAssign";
 import type { MapStyleKey } from "@/lib/mapStyles";
@@ -15,6 +15,7 @@ import WilayaRanking from "./WilayaRanking";
 import TimelineScrubber from "./TimelineScrubber";
 import RiskLegend from "./RiskLegend";
 import RiskPanel from "./RiskPanel";
+import LatestFires from "./LatestFires";
 
 const FireMap = dynamic(() => import("./FireMap"), {
   ssr: false,
@@ -42,6 +43,7 @@ export default function FireDashboard() {
   const focusNonce = useRef(0);
 
   const [rankingOpen, setRankingOpen] = useState(false);
+  const [latestOpen, setLatestOpen] = useState(false);
   const [showRisk, setShowRisk] = useState(false);
   const [historyMode, setHistoryMode] = useState(false);
   const [cursor, setCursor] = useState(0);
@@ -117,6 +119,24 @@ export default function FireDashboard() {
 
   const ranking = useMemo(() => rankWilayas(displayed?.features ?? []), [displayed]);
 
+  // 3 most recent detections (newest first).
+  const latest = useMemo<FireFeature[]>(() => {
+    const feats = displayed?.features ?? [];
+    return [...feats]
+      .sort((a, b) => {
+        const ta = a.properties.acq_datetime ? Date.parse(a.properties.acq_datetime) : 0;
+        const tb = b.properties.acq_datetime ? Date.parse(b.properties.acq_datetime) : 0;
+        return tb - ta;
+      })
+      .slice(0, 3);
+  }, [displayed]);
+
+  const selectFire = (f: SelectedFire) => {
+    setSelected(f);
+    setLatestOpen(false);
+    setRankingOpen(false);
+  };
+
   // Playback loop.
   useEffect(() => {
     if (!playing || !historyMode) return;
@@ -191,12 +211,22 @@ export default function FireDashboard() {
         error={error ? String(error.message ?? error) : undefined}
         historyMode={historyMode}
         onEnterHistory={enterHistory}
-        onToggleRanking={() => setRankingOpen((v) => !v)}
+        onToggleRanking={() => {
+          setRankingOpen((v) => !v);
+          setLatestOpen(false);
+        }}
+        onToggleLatest={() => {
+          setLatestOpen((v) => !v);
+          setRankingOpen(false);
+        }}
         showRisk={showRisk}
         onToggleRisk={() => setShowRisk((v) => !v)}
       />
 
       {!isMobile && (showRisk ? <RiskLegend /> : <Legend />)}
+
+      {!isMobile && !historyMode && <LatestFires fires={latest} onSelect={selectFire} isMobile={false} />}
+      {isMobile && latestOpen && <LatestFires fires={latest} onSelect={selectFire} isMobile onClose={() => setLatestOpen(false)} />}
 
       {!isMobile && !selected && !historyMode &&
         (showRisk ? (

@@ -25,6 +25,7 @@ interface Props {
   historyMode: boolean;
   onEnterHistory: () => void;
   onToggleRanking: () => void;
+  onToggleLatest: () => void;
   showRisk: boolean;
   onToggleRisk: () => void;
 }
@@ -121,7 +122,7 @@ const activeToggle: React.CSSProperties = {
 };
 
 export default function TopBar(props: Props) {
-  const { isMobile, styleKey, onStyleChange, duration, onDurationChange, historyMode, onEnterHistory, onToggleRanking, showRisk, onToggleRisk } = props;
+  const { isMobile, styleKey, onStyleChange, duration, onDurationChange, historyMode, onEnterHistory, onToggleRanking, onToggleLatest, showRisk, onToggleRisk } = props;
 
   if (isMobile) {
     return (
@@ -140,7 +141,10 @@ export default function TopBar(props: Props) {
             <Segmented options={durationOpts} value={duration} onChange={onDurationChange} big />
             <Segmented options={styleOpts} value={styleKey} onChange={onStyleChange} big />
             <div style={{ display: "flex", gap: 8 }}>
+              <button style={secondaryBtn} onClick={onToggleLatest}>Latest</button>
               <button style={secondaryBtn} onClick={onToggleRanking}>{showRisk ? "Top risk" : "Affected"}</button>
+            </div>
+            <div style={{ display: "flex", gap: 8 }}>
               <button style={{ ...secondaryBtn, ...(showRisk ? activeToggle : {}) }} onClick={onToggleRisk}>Risk</button>
               <button style={secondaryBtn} onClick={onEnterHistory}><ClockIcon size={15} /> Replay</button>
             </div>

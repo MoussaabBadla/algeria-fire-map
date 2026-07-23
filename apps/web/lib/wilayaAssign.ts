@@ -34,6 +34,10 @@ function nearestWilaya(lng: number, lat: number): WilayaPoint {
   return best;
 }
 
+export function nearestWilayaName(lng: number, lat: number): string {
+  return nearestWilaya(lng, lat).name;
+}
+
 export interface WilayaCount {
   name: string;
   lng: number;
