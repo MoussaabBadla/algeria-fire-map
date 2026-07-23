@@ -45,9 +45,10 @@ interface Props {
   onSelect: (fire: SelectedFire | null) => void;
   styleKey: MapStyleKey;
   isMobile: boolean;
+  focus: { lng: number; lat: number; zoom: number; nonce: number } | null;
 }
 
-export default function FireMap({ data, selected, onSelect, styleKey, isMobile }: Props) {
+export default function FireMap({ data, selected, onSelect, styleKey, isMobile, focus }: Props) {
   const isMobileRef = useRef(isMobile);
   isMobileRef.current = isMobile;
   const containerRef = useRef<HTMLDivElement>(null);
@@ -241,6 +242,14 @@ export default function FireMap({ data, selected, onSelect, styleKey, isMobile }
     const src = map.getSource(FIRES_SRC) as maplibregl.GeoJSONSource | undefined;
     if (src) src.setData(data as unknown as GeoJSON.FeatureCollection);
   }, [data]);
+
+  // Fly to a requested focus target (wilaya / search). `nonce` forces re-fire.
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !focus) return;
+    map.easeTo({ center: [focus.lng, focus.lat], zoom: focus.zoom, duration: 900 });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [focus?.nonce]);
 
   // Selection → pulsing marker + ease-to.
   useEffect(() => {
