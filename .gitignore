@@ -1,0 +1,36 @@
+# Env / secrets
+.env
+.env.local
+.env*.local
+*.env
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.pytest_cache/
+.mypy_cache/
+
+# Node / Next.js
+node_modules/
+.next/
+out/
+dist/
+build/
+.turbo/
+*.tsbuildinfo
+npm-debug.log*
+yarn-error.log*
+
+# Data lake / models (never commit data or artifacts)
+*.parquet
+*.onnx
+*.pkl
+data/
+models/
+
+# OS / editor
+.DS_Store
+.idea/
+.vscode/
