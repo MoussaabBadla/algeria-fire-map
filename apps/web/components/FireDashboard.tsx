@@ -5,7 +5,7 @@ import dynamic from "next/dynamic";
 import useSWR from "swr";
 import { fetchFires, fetchRisk, firesKey, riskKey, type FireCollection, type FireFeature, type RiskData, type RiskWilaya, type SelectedFire } from "@/lib/api";
 import { durationFor, haversineKm, passesFilter, withinAge, type DurationKey } from "@/lib/fire";
-import { nearestWilayaName, rankWilayas, type WilayaCount } from "@/lib/wilayaAssign";
+import { rankWilayas, type WilayaCount } from "@/lib/wilayaAssign";
 import type { MapStyleKey } from "@/lib/mapStyles";
 import { useIsMobile } from "@/lib/useIsMobile";
 import TopBar from "./TopBar";
@@ -16,7 +16,6 @@ import TimelineScrubber from "./TimelineScrubber";
 import RiskLegend from "./RiskLegend";
 import RiskPanel from "./RiskPanel";
 import LatestFires from "./LatestFires";
-import LocationBanner from "./LocationBanner";
 
 const FireMap = dynamic(() => import("./FireMap"), {
   ssr: false,
@@ -42,10 +41,6 @@ export default function FireDashboard() {
   const [selected, setSelected] = useState<SelectedFire | null>(null);
   const [focus, setFocus] = useState<Focus>(null);
   const focusNonce = useRef(0);
-  const [userLocation, setUserLocation] = useState<{ lng: number; lat: number } | null>(null);
-  const [nearest, setNearest] = useState<{ km: number; name: string } | null>(null);
-  const [locError, setLocError] = useState<string | null>(null);
-  const [locateOpen, setLocateOpen] = useState(false);
 
   const [rankingOpen, setRankingOpen] = useState(false);
   const [latestOpen, setLatestOpen] = useState(false);
@@ -208,45 +203,6 @@ export default function FireDashboard() {
     setRankingOpen(false);
   };
 
-  const onLocate = () => {
-    setLocateOpen(true);
-    setLocError(null);
-    setNearest(null);
-    if (typeof navigator === "undefined" || !("geolocation" in navigator)) {
-      setLocError("Location isn't available on this device.");
-      return;
-    }
-    navigator.geolocation.getCurrentPosition(
-      (pos) => {
-        const lng = pos.coords.longitude;
-        const lat = pos.coords.latitude;
-        setUserLocation({ lng, lat });
-        flyTo(lng, lat, 8.5);
-        const feats = displayed?.features ?? [];
-        let best: { lng: number; lat: number } | null = null;
-        let bestKm = Infinity;
-        for (const f of feats) {
-          const [flng, flat] = f.geometry.coordinates;
-          const km = haversineKm(lat, lng, flat, flng);
-          if (km < bestKm) {
-            bestKm = km;
-            best = { lng: flng, lat: flat };
-          }
-        }
-        setNearest(best ? { km: Math.round(bestKm), name: nearestWilayaName(best.lng, best.lat) } : null);
-      },
-      () => setLocError("Couldn't get your location — please allow location access."),
-      { enableHighAccuracy: true, timeout: 10000 }
-    );
-  };
-
-  const closeLocate = () => {
-    setLocateOpen(false);
-    setUserLocation(null);
-    setNearest(null);
-    setLocError(null);
-  };
-
   const enterHistory = () => {
     needInit.current = true;
     setHistoryMode(true);
@@ -271,7 +227,7 @@ export default function FireDashboard() {
 
   return (
     <main style={{ position: "fixed", inset: 0, background: "var(--bg)" }}>
-      <FireMap data={displayed} selected={selected} onSelect={setSelected} styleKey={styleKey} isMobile={isMobile} focus={focus} riskData={riskData} showRisk={showRisk} userLocation={userLocation} />
+      <FireMap data={displayed} selected={selected} onSelect={setSelected} styleKey={styleKey} isMobile={isMobile} focus={focus} riskData={riskData} showRisk={showRisk} />
 
       <TopBar
         isMobile={isMobile}
@@ -299,10 +255,7 @@ export default function FireDashboard() {
         }}
         showRisk={showRisk}
         onToggleRisk={() => setShowRisk((v) => !v)}
-        onLocate={onLocate}
       />
-
-      {locateOpen && <LocationBanner nearest={nearest} error={locError} isMobile={isMobile} onClose={closeLocate} />}
 
       {!isMobile && (showRisk ? <RiskLegend /> : <Legend />)}
 

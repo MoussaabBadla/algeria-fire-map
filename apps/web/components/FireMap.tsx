@@ -66,7 +66,6 @@ interface Props {
   focus: { lng: number; lat: number; zoom: number; nonce: number } | null;
   riskData: RiskData | undefined;
   showRisk: boolean;
-  userLocation: { lng: number; lat: number } | null;
 }
 
 const RISK_COLOR_EXPR: maplibregl.ExpressionSpecification = [
@@ -92,8 +91,7 @@ function riskGeoJSON(risk: RiskData | undefined): GeoJSON.FeatureCollection {
   };
 }
 
-export default function FireMap({ data, selected, onSelect, styleKey, isMobile, focus, riskData, showRisk, userLocation }: Props) {
-  const userMarkerRef = useRef<maplibregl.Marker | null>(null);
+export default function FireMap({ data, selected, onSelect, styleKey, isMobile, focus, riskData, showRisk }: Props) {
   const isMobileRef = useRef(isMobile);
   isMobileRef.current = isMobile;
   const riskDataRef = useRef(riskData);
@@ -350,18 +348,6 @@ export default function FireMap({ data, selected, onSelect, styleKey, isMobile, 
     if (!map || !readyRef.current) return;
     if (map.getLayer(RISK_LAYER)) map.setLayoutProperty(RISK_LAYER, "visibility", showRisk ? "visible" : "none");
   }, [showRisk]);
-
-  // User location marker.
-  useEffect(() => {
-    const map = mapRef.current;
-    if (!map) return;
-    userMarkerRef.current?.remove();
-    userMarkerRef.current = null;
-    if (!userLocation) return;
-    const el = document.createElement("div");
-    el.className = "user-marker";
-    userMarkerRef.current = new maplibregl.Marker({ element: el }).setLngLat([userLocation.lng, userLocation.lat]).addTo(map);
-  }, [userLocation]);
 
   // Fly to a requested focus target (wilaya / search). `nonce` forces re-fire.
   useEffect(() => {

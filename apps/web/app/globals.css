@@ -118,30 +118,6 @@ body {
   animation: ringPulse 1.6s ease-out infinite;
 }
 
-/* User location marker */
-.user-marker {
-  width: 16px;
-  height: 16px;
-  position: relative;
-}
-.user-marker::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  border-radius: 50%;
-  background: #3b82f6;
-  border: 3px solid #fff;
-  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.4), 0 0 12px rgba(59, 130, 246, 0.7);
-}
-.user-marker::after {
-  content: "";
-  position: absolute;
-  inset: -4px;
-  border-radius: 50%;
-  border: 2px solid rgba(59, 130, 246, 0.6);
-  animation: ringPulse 1.8s ease-out infinite;
-}
-
 /* MapLibre attribution tidy (we use our own detail panel) */
 .maplibregl-ctrl-attrib {
   background: rgba(0, 0, 0, 0.4) !important;

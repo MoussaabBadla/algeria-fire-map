@@ -5,7 +5,7 @@ import { MAP_STYLES, type MapStyleKey } from "@/lib/mapStyles";
 import Segmented from "./Segmented";
 import StatBadge from "./StatBadge";
 import RiskLegend from "./RiskLegend";
-import { ClockIcon, FlameIcon, GitHubIcon, PinIcon } from "./Icons";
+import { ClockIcon, FlameIcon, GitHubIcon } from "./Icons";
 
 const REPO_URL = "https://github.com/MoussaabBadla/algeria-fire-map";
 const AUTHOR_URL = "https://github.com/MoussaabBadla";
@@ -28,7 +28,6 @@ interface Props {
   onToggleLatest: () => void;
   showRisk: boolean;
   onToggleRisk: () => void;
-  onLocate: () => void;
 }
 
 const styleOpts = MAP_STYLES.map((s) => ({ key: s.key, label: s.label }));
@@ -131,7 +130,7 @@ const activeToggle: React.CSSProperties = {
 };
 
 export default function TopBar(props: Props) {
-  const { isMobile, styleKey, onStyleChange, duration, onDurationChange, historyMode, onEnterHistory, onToggleRanking, onToggleLatest, showRisk, onToggleRisk, onLocate } = props;
+  const { isMobile, styleKey, onStyleChange, duration, onDurationChange, historyMode, onEnterHistory, onToggleRanking, onToggleLatest, showRisk, onToggleRisk } = props;
 
   if (isMobile) {
     return (
@@ -149,7 +148,6 @@ export default function TopBar(props: Props) {
             {showRisk ? <RiskLegend horizontal /> : <InlineLegend />}
             <Segmented options={durationOpts} value={duration} onChange={onDurationChange} big />
             <Segmented options={styleOpts} value={styleKey} onChange={onStyleChange} big />
-            <button style={{ ...secondaryBtn, width: "100%" }} onClick={onLocate}><PinIcon size={14} /> Near me · nearest fire</button>
             <div style={{ display: "flex", gap: 8 }}>
               <button style={secondaryBtn} onClick={onToggleLatest}>Latest</button>
               <button style={secondaryBtn} onClick={onToggleRanking}>{showRisk ? "Top risk" : "Affected"}</button>
@@ -186,9 +184,6 @@ export default function TopBar(props: Props) {
         <div style={{ fontSize: 10.5, textTransform: "uppercase", letterSpacing: "0.06em", color: "var(--text-muted)", marginBottom: 6 }}>Period</div>
         <Segmented options={durationOpts} value={duration} onChange={onDurationChange} />
       </div>
-      <button style={{ ...secondaryBtn, width: "100%", marginBottom: 8 }} onClick={onLocate}>
-        <PinIcon size={14} /> Near me · nearest fire
-      </button>
       <button style={{ ...secondaryBtn, width: "100%", marginBottom: 8, ...(showRisk ? activeToggle : {}) }} onClick={onToggleRisk}>
         <FlameIcon size={14} color={showRisk ? "#ff9e3d" : "var(--text-secondary)"} /> Fire risk (FWI){showRisk ? " · on" : ""}
       </button>
