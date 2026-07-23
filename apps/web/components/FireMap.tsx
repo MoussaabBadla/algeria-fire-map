@@ -62,7 +62,12 @@ export default function FireMap({ data, selected, onSelect }: Props) {
     });
     mapRef.current = map;
     map.addControl(new maplibregl.NavigationControl({ showCompass: false }), "bottom-right");
-    map.on("error", (e) => console.error("[maplibre error]", e?.error?.message ?? e));
+    map.on("error", (e) => {
+      // Ignore benign tile aborts that happen during fast pan/zoom.
+      const msg = e?.error?.message ?? "";
+      if (/Failed to fetch|aborted|AbortError/i.test(msg)) return;
+      console.error("[maplibre error]", msg || e);
+    });
 
     map.on("load", () => {
       map.resize();
