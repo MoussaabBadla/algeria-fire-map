@@ -17,7 +17,7 @@ const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "https://algeria-fire-map.v
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
   title: {
-    default: "Algeria Fire Map — Real-time wildfire monitoring 🇩🇿🔥",
+    default: "Algeria Fire Map — Real-time wildfire monitoring",
     template: "%s · Algeria Fire Map",
   },
   description:
