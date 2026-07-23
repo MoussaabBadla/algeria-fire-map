@@ -111,11 +111,26 @@ export default function FireDashboard() {
       return { ...historyData, features, properties: { ...historyData.properties, count: features.length } };
     }
     if (!liveData) return liveData;
-    const features = liveData.features.filter(
-      (f) => passesFilter(f.properties, "confirmed") && withinAge(f.properties.acq_datetime, dur.maxAgeHours)
-    );
+    const confirmed = liveData.features.filter((f) => passesFilter(f.properties, "confirmed"));
+    let features;
+    if (duration === "live") {
+      // Satellite data lags wall-clock, so "Live" = the freshest available data:
+      // detections within the window of the LATEST detection (never empty when data exists).
+      let latest = 0;
+      for (const f of confirmed) {
+        const iso = f.properties.acq_datetime;
+        if (iso) latest = Math.max(latest, Date.parse(iso));
+      }
+      const cutoff = latest - dur.maxAgeHours * 3_600_000;
+      features = confirmed.filter((f) => {
+        const iso = f.properties.acq_datetime;
+        return iso ? Date.parse(iso) >= cutoff : false;
+      });
+    } else {
+      features = confirmed.filter((f) => withinAge(f.properties.acq_datetime, dur.maxAgeHours));
+    }
     return { ...liveData, features, properties: { ...liveData.properties, count: features.length } };
-  }, [historyMode, historyData, historyConfirmed, cursor, liveData, dur.maxAgeHours]);
+  }, [historyMode, historyData, historyConfirmed, cursor, liveData, dur.maxAgeHours, duration]);
 
   const ranking = useMemo(() => rankWilayas(displayed?.features ?? []), [displayed]);
 
