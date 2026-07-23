@@ -10,7 +10,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from .config import get_settings
-from .routers import fires
+from .routers import fires, place
 
 settings = get_settings()
 
@@ -31,6 +31,7 @@ app.add_middleware(
 )
 
 app.include_router(fires.router, tags=["fires"])
+app.include_router(place.router, tags=["place"])
 
 
 @app.get("/health", tags=["meta"])
