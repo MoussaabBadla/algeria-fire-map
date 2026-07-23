@@ -72,9 +72,10 @@ export default function TimelineScrubber({
           <span style={{ fontSize: 12, color: "var(--text-muted)" }}>{shownCount} fires</span>
           <button
             onClick={onExit}
-            style={{ display: "inline-flex", alignItems: "center", gap: 5, padding: "4px 11px", borderRadius: 99, border: "1px solid rgba(16,185,129,0.4)", background: "rgba(16,185,129,0.15)", color: "#5fe3ab", fontSize: 11.5, fontWeight: 700, cursor: "pointer", letterSpacing: "0.04em" }}
+            style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "6px 13px", borderRadius: 99, border: "none", background: "#10b981", color: "#fff", fontSize: 12, fontWeight: 700, cursor: "pointer", letterSpacing: "0.02em", boxShadow: "0 2px 10px rgba(16,185,129,0.35)" }}
           >
-            LIVE
+            <span style={{ width: 7, height: 7, borderRadius: "50%", background: "#fff", animation: "livePulse 2s ease-in-out infinite" }} />
+            Go live
           </button>
         </div>
       </div>

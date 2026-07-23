@@ -65,7 +65,15 @@ function InlineLegend() {
   );
 }
 
-function LiveDot() {
+function LiveDot({ replay }: { replay?: boolean }) {
+  if (replay) {
+    return (
+      <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
+        <span style={{ width: 7, height: 7, borderRadius: "50%", background: "var(--accent)" }} />
+        <span style={{ fontSize: 10, fontWeight: 700, color: "var(--accent)", letterSpacing: "0.06em" }}>REPLAY</span>
+      </div>
+    );
+  }
   return (
     <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
       <span style={{ width: 7, height: 7, borderRadius: "50%", background: "var(--live)", animation: "livePulse 2s ease-in-out infinite" }} />
@@ -132,7 +140,7 @@ export default function TopBar(props: Props) {
             <Brand small />
             <StatBadge {...props} compact />
           </div>
-          <LiveDot />
+          <LiveDot replay={historyMode} />
         </div>
 
         {!historyMode && (
@@ -163,7 +171,7 @@ export default function TopBar(props: Props) {
     <div className="glass animate-in" style={{ position: "absolute", top: 16, left: 16, zIndex: 20, padding: 18, width: 300, maxWidth: "calc(100vw - 32px)" }}>
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
         <Brand />
-        <LiveDot />
+        <LiveDot replay={historyMode} />
       </div>
       <div style={{ marginBottom: 14 }}>
         <StatBadge {...props} />
