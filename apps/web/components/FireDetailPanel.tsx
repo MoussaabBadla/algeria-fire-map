@@ -21,7 +21,24 @@ function Row({ label, children }: { label: string; children: React.ReactNode }) 
   );
 }
 
-export default function FireDetailPanel({ fire, onClose, isMobile }: { fire: SelectedFire; onClose: () => void; isMobile: boolean }) {
+interface Incident {
+  count: number;
+  first: number;
+  last: number;
+  maxFrp: number;
+}
+
+export default function FireDetailPanel({
+  fire,
+  incident,
+  onClose,
+  isMobile,
+}: {
+  fire: SelectedFire;
+  incident?: Incident | null;
+  onClose: () => void;
+  isMobile: boolean;
+}) {
   const p = fire.properties;
   const level = intensityForFrp(p.frp);
   const conf = confidenceMeta(p.confidence);
@@ -99,6 +116,21 @@ export default function FireDetailPanel({ fire, onClose, isMobile }: { fire: Sel
           <div style={{ fontSize: 13.5, color: "var(--text-secondary)" }}>Remote area</div>
         )}
       </div>
+
+      {/* Incident activity (nearby detections form one fire cluster) */}
+      {incident && (
+        <div style={{ marginBottom: 16, padding: "12px 14px", background: "rgba(255,122,26,0.08)", borderRadius: 12, border: "1px solid rgba(255,122,26,0.22)" }}>
+          <div style={{ color: "var(--accent)", fontSize: 11, textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 5, fontWeight: 700 }}>
+            Fire cluster · {incident.count} detections
+          </div>
+          <div style={{ fontSize: 13, color: "var(--text)", fontWeight: 500 }}>
+            Active for ~{Math.max(1, Math.round((incident.last - incident.first) / 3_600_000))} h
+          </div>
+          <div style={{ fontSize: 12.5, color: "var(--text-secondary)", marginTop: 1 }}>
+            First seen {relativeTime(new Date(incident.first).toISOString())} · last {relativeTime(new Date(incident.last).toISOString())}
+          </div>
+        </div>
+      )}
 
       {/* Fire power hero */}
       <div style={{ marginBottom: 6 }}>

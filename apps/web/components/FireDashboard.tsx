@@ -4,7 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import dynamic from "next/dynamic";
 import useSWR from "swr";
 import { fetchFires, fetchRisk, firesKey, riskKey, type FireCollection, type FireFeature, type RiskData, type RiskWilaya, type SelectedFire } from "@/lib/api";
-import { durationFor, passesFilter, withinAge, type DurationKey } from "@/lib/fire";
+import { durationFor, haversineKm, passesFilter, withinAge, type DurationKey } from "@/lib/fire";
 import { rankWilayas, type WilayaCount } from "@/lib/wilayaAssign";
 import type { MapStyleKey } from "@/lib/mapStyles";
 import { useIsMobile } from "@/lib/useIsMobile";
@@ -137,6 +137,25 @@ export default function FireDashboard() {
     setRankingOpen(false);
   };
 
+  // Incident context for the selected fire: nearby detections (~3 km) form one
+  // "fire cluster" → first-seen / last-seen, like a real incident.
+  const incident = useMemo(() => {
+    if (!selected || !displayed) return null;
+    const times: number[] = [];
+    let count = 0;
+    let maxFrp = 0;
+    for (const f of displayed.features) {
+      const [lng, lat] = f.geometry.coordinates;
+      if (haversineKm(selected.lat, selected.lng, lat, lng) <= 3) {
+        count += 1;
+        maxFrp = Math.max(maxFrp, f.properties.frp);
+        if (f.properties.acq_datetime) times.push(Date.parse(f.properties.acq_datetime));
+      }
+    }
+    if (count <= 1 || times.length === 0) return null;
+    return { count, first: Math.min(...times), last: Math.max(...times), maxFrp };
+  }, [selected, displayed]);
+
   // Playback loop.
   useEffect(() => {
     if (!playing || !historyMode) return;
@@ -259,7 +278,7 @@ export default function FireDashboard() {
         />
       )}
 
-      {selected && <FireDetailPanel fire={selected} onClose={() => setSelected(null)} isMobile={isMobile} />}
+      {selected && <FireDetailPanel fire={selected} incident={incident} onClose={() => setSelected(null)} isMobile={isMobile} />}
     </main>
   );
 }
