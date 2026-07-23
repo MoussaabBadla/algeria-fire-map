@@ -36,7 +36,7 @@ async def get_fires(
         )
 
     cache = get_cache()
-    cache_key = f"fires:days={days}"
+    cache_key = f"fires:v2:days={days}"  # v2 = Algeria border clip
     ttl = settings.fires_cache_ttl
 
     body = await cache.get(cache_key)
