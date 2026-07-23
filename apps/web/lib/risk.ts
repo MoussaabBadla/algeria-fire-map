@@ -15,6 +15,10 @@ export const RISK_CLASSES: RiskClass[] = [
   { key: "extreme", label: "Extreme", color: "#991b1b" },
 ];
 
+// Plain-language explanation for non-expert users.
+export const FWI_EXPLAINER =
+  "The Fire Weather Index (FWI) rates how easily a wildfire could start and spread today — from the weather alone: heat, dryness, wind, and how long since it last rained. Higher means more dangerous conditions. It's the standard used by fire services and the EU (EFFIS). Note: it shows the risk, not that a fire is already burning.";
+
 const byKey = new Map(RISK_CLASSES.map((c) => [c.key, c]));
 
 export function riskColor(cls: string): string {

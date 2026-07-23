@@ -1,13 +1,42 @@
 "use client";
 
-import { RISK_CLASSES } from "@/lib/risk";
+import { useState } from "react";
+import { FWI_EXPLAINER, RISK_CLASSES } from "@/lib/risk";
+
+function InfoButton({ horizontal }: { horizontal?: boolean }) {
+  const [open, setOpen] = useState(false);
+  const popStyle: React.CSSProperties = horizontal
+    ? { position: "fixed", left: 12, right: 12, top: "calc(env(safe-area-inset-top) + 82px)", zIndex: 40 }
+    : { position: "absolute", bottom: "calc(100% + 8px)", left: 0, width: 250, zIndex: 40 };
+  return (
+    <span style={{ position: "relative", display: "inline-flex" }}>
+      <button
+        aria-label="What is the Fire Weather Index?"
+        onMouseEnter={() => setOpen(true)}
+        onMouseLeave={() => setOpen(false)}
+        onClick={() => setOpen((v) => !v)}
+        style={{ width: 15, height: 15, borderRadius: "50%", border: "1px solid var(--border-strong)", background: "transparent", color: "var(--text-muted)", cursor: "pointer", fontSize: 9.5, lineHeight: 1, display: "grid", placeItems: "center", padding: 0 }}
+      >
+        i
+      </button>
+      {open && (
+        <div style={{ ...popStyle, padding: 13, borderRadius: 12, background: "var(--surface-solid)", border: "1px solid var(--border-strong)", boxShadow: "var(--shadow)", fontSize: 12, lineHeight: 1.55, color: "var(--text-secondary)", textAlign: "left" }}>
+          <div style={{ fontWeight: 700, color: "var(--text)", marginBottom: 4 }}>What is fire risk (FWI)?</div>
+          {FWI_EXPLAINER}
+        </div>
+      )}
+    </span>
+  );
+}
 
 export default function RiskLegend({ horizontal }: { horizontal?: boolean }) {
   if (horizontal) {
     return (
       <div style={{ padding: "2px 2px 4px" }}>
-        <div style={{ display: "flex", justifyContent: "space-between", fontSize: 10, color: "var(--text-muted)", marginBottom: 4 }}>
-          <span style={{ textTransform: "uppercase", letterSpacing: "0.05em" }}>Fire-weather risk</span>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: 10, color: "var(--text-muted)", marginBottom: 4 }}>
+          <span style={{ display: "inline-flex", alignItems: "center", gap: 6, textTransform: "uppercase", letterSpacing: "0.05em" }}>
+            Fire-weather risk <InfoButton horizontal />
+          </span>
           <span>Low to Extreme</span>
         </div>
         <div style={{ display: "flex", height: 8, borderRadius: 99, overflow: "hidden" }}>
@@ -20,8 +49,11 @@ export default function RiskLegend({ horizontal }: { horizontal?: boolean }) {
   }
   return (
     <div className="glass animate-in" style={{ position: "absolute", left: 16, bottom: 16, zIndex: 20, padding: 16, width: 192 }}>
-      <div style={{ fontSize: 12, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.04em", color: "var(--text-secondary)", marginBottom: 12 }}>
-        Fire-weather risk
+      <div style={{ display: "flex", alignItems: "center", gap: 7, marginBottom: 12 }}>
+        <span style={{ fontSize: 12, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.04em", color: "var(--text-secondary)" }}>
+          Fire-weather risk
+        </span>
+        <InfoButton />
       </div>
       {RISK_CLASSES.slice().reverse().map((c) => (
         <div key={c.key} style={{ display: "flex", alignItems: "center", gap: 9, marginBottom: 7 }}>
@@ -30,7 +62,7 @@ export default function RiskLegend({ horizontal }: { horizontal?: boolean }) {
         </div>
       ))}
       <div style={{ marginTop: 8, paddingTop: 8, borderTop: "1px solid var(--border)", fontSize: 11, color: "var(--text-muted)", lineHeight: 1.5 }}>
-        Fire Weather Index from live weather. Tap a wilaya for details.
+        Tap a wilaya for details.
       </div>
     </div>
   );
