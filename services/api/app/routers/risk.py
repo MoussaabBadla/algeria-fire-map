@@ -50,7 +50,7 @@ def _series_for(w: dict) -> list[DayWeather]:
 @router.get("/risk")
 async def get_risk() -> Response:
     cache = get_cache()
-    body = await cache.get("risk:all")
+    body = await cache.get("risk:all:v2")
     if body is None:
         weather = await fetch_wilaya_weather()
         wilayas = []
@@ -78,6 +78,6 @@ async def get_risk() -> Response:
             "wilayas": sorted(wilayas, key=lambda x: x["fwi"], reverse=True),
         }
         body = json.dumps(payload, ensure_ascii=False)
-        await cache.set("risk:all", body, RISK_TTL)
+        await cache.set("risk:all:v2", body, RISK_TTL)
 
     return Response(content=body, media_type="application/json", headers={"Cache-Control": "public, s-maxage=3600"})
