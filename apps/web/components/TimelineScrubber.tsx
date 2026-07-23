@@ -114,7 +114,7 @@ export default function TimelineScrubber({
 
       <div style={{ display: "flex", justifyContent: "space-between", marginTop: 6, fontSize: 10, color: "var(--text-muted)" }}>
         <span>{formatAlgeriaTime(new Date(minTime).toISOString())}</span>
-        <span>Drag or play to replay the last 7 days</span>
+        <span>Drag or play to replay the last 5 days</span>
         <span>now</span>
       </div>
     </div>

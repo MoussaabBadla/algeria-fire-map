@@ -103,7 +103,7 @@ export default function TopBar(props: Props) {
             <Segmented options={styleOpts} value={styleKey} onChange={onStyleChange} big />
             <div style={{ display: "flex", gap: 8 }}>
               <button style={secondaryBtn} onClick={onToggleRanking}>Most affected</button>
-              <button style={secondaryBtn} onClick={onEnterHistory}><ClockIcon size={15} /> Replay 7 days</button>
+              <button style={secondaryBtn} onClick={onEnterHistory}><ClockIcon size={15} /> Replay 5 days</button>
             </div>
             <div style={{ fontSize: 9.5, color: "var(--text-muted)", textAlign: "center", opacity: 0.8 }}>
               Map © OpenStreetMap · Esri · Fires: NASA FIRMS
@@ -134,7 +134,7 @@ export default function TopBar(props: Props) {
       </div>
       {!historyMode && (
         <button style={{ ...secondaryBtn, width: "100%" }} onClick={onEnterHistory}>
-          <ClockIcon size={15} /> Replay last 7 days
+          <ClockIcon size={15} /> Replay last 5 days
         </button>
       )}
     </div>

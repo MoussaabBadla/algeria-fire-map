@@ -23,7 +23,8 @@ const FireMap = dynamic(() => import("./FireMap"), {
   ),
 });
 
-const SEVEN_DAYS = 7 * 24 * 3600 * 1000;
+const HISTORY_DAYS = 5; // FIRMS Area API caps the look-back at 5 days
+const HISTORY_SPAN = HISTORY_DAYS * 24 * 3600 * 1000;
 const HISTORY_WINDOW = 12 * 3600 * 1000; // rolling window shown at the cursor
 const PLAYBACK_STEPS = 150;
 const PLAYBACK_TICK = 80;
@@ -51,7 +52,7 @@ export default function FireDashboard() {
     revalidateOnFocus: false,
     keepPreviousData: true,
   });
-  const { data: historyData } = useSWR<FireCollection>(historyMode ? firesKey(7) : null, fetchFires, {
+  const { data: historyData } = useSWR<FireCollection>(historyMode ? firesKey(HISTORY_DAYS) : null, fetchFires, {
     revalidateOnFocus: false,
     keepPreviousData: true,
   });
@@ -74,7 +75,7 @@ export default function FireDashboard() {
       if (t < lo) lo = t;
       if (t > hi) hi = t;
     }
-    if (!isFinite(lo)) return { minTime: Date.now() - SEVEN_DAYS, maxTime: Date.now() };
+    if (!isFinite(lo)) return { minTime: Date.now() - HISTORY_SPAN, maxTime: Date.now() };
     return { minTime: lo, maxTime: hi };
   }, [historyConfirmed]);
 
