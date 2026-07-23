@@ -41,3 +41,6 @@ models/
 # Test artifacts
 .playwright-mcp/
 *.png
+
+# Keep README screenshots
+!docs/screenshots/*.png

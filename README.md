@@ -10,6 +10,16 @@ Open source · MIT licensed · Built with NASA FIRMS, Open-Meteo & OpenStreetMap
 
 </div>
 
+![Algeria Fire Map — live desktop view](docs/screenshots/desktop-dark.png)
+
+<div align="center">
+
+<img src="docs/screenshots/desktop-satellite.png" alt="Satellite view" width="49%"> <img src="docs/screenshots/mobile.png" alt="Mobile view" width="24%">
+
+<sub>Live fires over satellite imagery · mobile, map-first UX</sub>
+
+</div>
+
 ---
 
 ## What it does
