@@ -9,6 +9,12 @@
     "loadingMap": "Loading map…",
     "unknown": "Unknown"
   },
+  "nav": {
+    "menu": "Menu",
+    "map": "Live map",
+    "stats": "Statistics",
+    "source": "Source code"
+  },
   "topBar": {
     "map": "Map",
     "period": "Period",
@@ -195,6 +201,18 @@
       "b4": "Recent data is near-real-time and may be revised; older data uses the science-quality archive.",
       "b5": "\"Confirmed\" means a high-confidence detection with FRP ≥ 15 MW, clipped to Algeria's borders. Persistent industrial gas-flares are largely excluded by this filter.",
       "b6": "One fire spans many pixels and passes — that is why we cluster detections into incidents. Counts are estimates, not an official tally."
-    }
+    },
+    "insightLead": "Key insight",
+    "insight": "{month} is Algeria's most dangerous month — {pct}% of all fire detections since {year} occur then.",
+    "peakLabel": "Peak month",
+    "seasonLabel": "Fire season",
+    "worstLabel": "Worst year",
+    "intenseLabel": "Intense fires",
+    "intenseSub": "of detections above 50 MW",
+    "ofAllFires": "of all detections",
+    "vsAvg": "{mult}× the yearly average",
+    "peakTakeaway": "{month} accounts for {pct}% of the year's fire activity.",
+    "yearTakeaway": "{year} was the worst year on record — {mult}× the multi-year average.",
+    "intensityTakeaway": "Most detections are low-power; the largest {pct}% (≥ 50 MW) do the real damage."
   }
 }

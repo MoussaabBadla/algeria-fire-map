@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { DURATIONS, type DurationKey } from "@/lib/fire";
 import { MAP_STYLES, type MapStyleKey } from "@/lib/mapStyles";
 import { useTranslations } from "@/lib/i18n/LocaleProvider";
@@ -8,6 +7,7 @@ import Segmented from "./Segmented";
 import StatBadge from "./StatBadge";
 import RiskLegend from "./RiskLegend";
 import LanguageSwitcher from "./LanguageSwitcher";
+import NavMenu from "./NavMenu";
 import { ClockIcon, FlameIcon, GitHubIcon, PinIcon } from "./Icons";
 
 const REPO_URL = "https://github.com/MoussaabBadla/algeria-fire-map";
@@ -148,8 +148,9 @@ export default function TopBar(props: Props) {
             <Brand small t={t} />
             <StatBadge {...props} compact />
           </div>
-          <div style={{ display: "flex", alignItems: "center", gap: 10, flexShrink: 0 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }}>
             <LanguageSwitcher compact />
+            <NavMenu size={34} />
             <LiveDot replay={historyMode} t={t} />
           </div>
         </div>
@@ -168,7 +169,6 @@ export default function TopBar(props: Props) {
               <button style={{ ...secondaryBtn, ...(showIncidents ? activeToggle : {}) }} onClick={onToggleIncidents}>{t("topBar.incidents")}</button>
               <button style={secondaryBtn} onClick={onEnterHistory}><ClockIcon size={15} /> {t("topBar.replay")}</button>
             </div>
-            <Link href="/stats" style={{ ...secondaryBtn, textDecoration: "none" }}>{t("topBar.statistics")} →</Link>
             <GitHubLink t={t} />
             <div style={{ fontSize: 9.5, color: "var(--text-muted)", textAlign: "center", opacity: 0.8 }}>
               {t("common.mapAttribution")}
@@ -184,7 +184,10 @@ export default function TopBar(props: Props) {
     <div className="glass animate-in" style={{ position: "absolute", top: 16, insetInlineStart: 16, zIndex: 20, padding: 18, width: 300, maxWidth: "calc(100vw - 32px)" }}>
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
         <Brand t={t} />
-        <LiveDot replay={historyMode} t={t} />
+        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <LiveDot replay={historyMode} t={t} />
+          <NavMenu size={34} />
+        </div>
       </div>
       <div style={{ marginBottom: 14 }}>
         <StatBadge {...props} />
@@ -208,9 +211,6 @@ export default function TopBar(props: Props) {
           <ClockIcon size={15} /> {t("topBar.replayLast5Days")}
         </button>
       )}
-      <Link href="/stats" style={{ ...secondaryBtn, width: "100%", marginTop: 8, textDecoration: "none" }}>
-        {t("topBar.statistics")} →
-      </Link>
       <div style={{ marginTop: 10, display: "flex", justifyContent: "center" }}>
         <LanguageSwitcher />
       </div>
