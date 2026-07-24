@@ -22,13 +22,14 @@ select
     ST_Y(e.centroid) as lat,
     case when e.hull is not null then ST_AsGeoJSON(e.hull) end as hull_json,
     e.first_seen, e.last_seen, e.detection_count,
-    e.max_frp, e.total_frp, e.is_active,
+    e.max_frp, e.total_frp, e.is_active, e.confirmed,
     e.wilaya_code, w.name as wilaya_name, w.name_ar as wilaya_name_ar
 from fire_events e
 left join wilayas w on w.code = e.wilaya_code
 where ($1::boolean is false or e.is_active)
   and ($2::int is null or e.wilaya_code = $2)
   and ($3::timestamptz is null or e.last_seen >= $3)
+  and ($5::boolean is false or e.confirmed)
 order by e.last_seen desc
 limit $4
 """
@@ -40,6 +41,7 @@ async def get_events(
     wilaya: int | None = Query(None, description="Filter to a wilaya code."),
     days: int | None = Query(None, ge=1, le=3650, description="Only incidents seen in the last N days."),
     limit: int = Query(500, ge=1, le=5000),
+    confirmed_only: bool = Query(True, description="Only confirmed incidents (a high-confidence, FRP>=15 detection). Default true."),
 ) -> Response:
     pool = await get_pool()
     if pool is None:
@@ -53,7 +55,7 @@ async def get_events(
             since = await conn.fetchval("select now() - make_interval(days => $1::int)", days)
 
     async with pool.acquire() as conn:
-        rows = await conn.fetch(_LIST_SQL, active_only, wilaya, since, limit)
+        rows = await conn.fetch(_LIST_SQL, active_only, wilaya, since, limit, confirmed_only)
 
     features = []
     for r in rows:
@@ -65,6 +67,7 @@ async def get_events(
             "max_frp": r["max_frp"],
             "total_frp": r["total_frp"],
             "is_active": r["is_active"],
+            "confirmed": r["confirmed"],
             "wilaya_code": r["wilaya_code"],
             "wilaya_name": r["wilaya_name"],
             "wilaya_name_ar": r["wilaya_name_ar"],

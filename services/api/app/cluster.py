@@ -44,6 +44,7 @@ update fire_events fe set
     max_frp         = agg.max_frp,
     total_frp       = agg.total_frp,
     wilaya_code     = agg.wilaya_code,
+    confirmed       = agg.confirmed,
     updated_at      = now()
 from (
     select event_id,
@@ -56,7 +57,10 @@ from (
            count(*)                                             as cnt,
            max(frp)                                             as max_frp,
            sum(frp)                                             as total_frp,
-           mode() within group (order by wilaya_code)           as wilaya_code
+           mode() within group (order by wilaya_code)           as wilaya_code,
+           -- Confirmed = contains at least one confirmed detection
+           -- (high confidence AND FRP >= 15), matching the app-wide definition.
+           bool_or(confidence = 'high' and frp >= 15)           as confirmed
     from detections
     where event_id = any($1::bigint[])
     group by event_id
