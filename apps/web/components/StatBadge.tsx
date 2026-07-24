@@ -10,6 +10,7 @@ interface Props {
   generatedAt: string | undefined;
   loading: boolean;
   error?: string;
+  onRetry?: () => void;
   compact?: boolean;
 }
 
@@ -21,11 +22,18 @@ function lastUpdated(iso: string | undefined, t: Translator): string {
   return t("time.hAgo", { n: Math.round(mins / 60) });
 }
 
-export default function StatBadge({ shownCount, totalCount, generatedAt, loading, error, compact }: Props) {
+export default function StatBadge({ shownCount, totalCount, generatedAt, loading, error, onRetry, compact }: Props) {
   const [showInfo, setShowInfo] = useState(false);
   const t = useTranslations();
 
-  if (error) return <div style={{ color: "var(--fire-4)", fontSize: 13 }}>{error}</div>;
+  if (error) return (
+    <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "8px 10px", background: "rgba(224, 30, 55, 0.1)", borderRadius: 10, border: "1px solid rgba(224, 30, 55, 0.25)" }}>
+      <span style={{ fontSize: 13, color: "var(--fire-4)", flex: 1, minWidth: 0 }}>{error}</span>
+      {onRetry && (
+        <button onClick={onRetry} style={{ fontSize: 11, fontWeight: 600, color: "var(--accent)", background: "none", borderRadius: 6, padding: "4px 10px", cursor: "pointer", whiteSpace: "nowrap", flexShrink: 0 }}>Retry</button>
+      )}
+    </div>
+  );
 
   return (
     <div>
