@@ -12,6 +12,23 @@ class Settings(BaseSettings):
     # --- NASA FIRMS ---
     # Free key: https://firms.modaps.eosdis.nasa.gov/api/area/  (click "Get MAP_KEY")
     nasa_firms_map_key: str = ""
+    # Extra comma-separated keys used ONLY by the historical backfill, to parallelize
+    # under the per-key ~5000-transactions/10-min limit. Each is its own quota bucket.
+    nasa_firms_map_keys: str = ""
+
+    @property
+    def firms_key_pool(self) -> list[str]:
+        pool = [self.nasa_firms_map_key] + [
+            k.strip() for k in self.nasa_firms_map_keys.split(",")
+        ]
+        seen: set[str] = set()
+        out: list[str] = []
+        for k in pool:
+            k = (k or "").strip()
+            if k and k not in seen:
+                seen.add(k)
+                out.append(k)
+        return out
 
     # --- CORS: comma-separated list of allowed frontend origins ---
     cors_origins: str = "http://localhost:3000"
