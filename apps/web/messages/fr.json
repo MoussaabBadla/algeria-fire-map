@@ -1,0 +1,145 @@
+{
+  "common": {
+    "appName": "Algérie Fire Map",
+    "tagline": "Surveillance des feux de forêt en direct",
+    "openSource": "Open source",
+    "by": "par {name}",
+    "mapAttribution": "Carte © OpenStreetMap · Esri · Feux : NASA FIRMS",
+    "close": "Fermer",
+    "loadingMap": "Chargement de la carte…",
+    "unknown": "Inconnu"
+  },
+  "topBar": {
+    "map": "Carte",
+    "period": "Période",
+    "latest": "Dernier",
+    "topRisk": "Risque max",
+    "affected": "Touché",
+    "risk": "Risque",
+    "replay": "Replay",
+    "replayLast5Days": "Replay des 5 derniers jours",
+    "fireRiskFwi": "Risque feu (FWI)",
+    "on": "activé",
+    "live": "EN DIRECT",
+    "replayBadge": "REPLAY"
+  },
+  "legend": {
+    "firePowerMw": "Puissance du feu (MW)",
+    "hint": "La lueur montre la densité ; zoomez pour voir les détections individuelles."
+  },
+  "riskLegend": {
+    "fireWeatherRisk": "Risque météo-feu",
+    "lowToExtreme": "Faible à Extrême",
+    "whatIsFwiAria": "Qu'est-ce que l'indice FWI ?",
+    "whatIsFwiTitle": "Qu'est-ce que le risque feu (FWI) ?",
+    "tapWilaya": "Appuyez sur une wilaya pour plus de détails."
+  },
+  "riskPanel": {
+    "highestFireRisk": "Risque feu le plus élevé"
+  },
+  "wilayaRanking": {
+    "mostAffected": "Wilayas les plus touchées",
+    "searchPlaceholder": "Rechercher…",
+    "fires": "feux",
+    "notifyHint": "Cliquez sur la cloche pour être notifié"
+  },
+  "alerts": {
+    "title": "Nouveaux feux",
+    "newFiresIn": "{n} nouveau(x) feu(x) dans {name}",
+    "newFiresInMultiple": "{n} nouveau(x) feu(x) dans {names}",
+    "view": "Voir",
+    "follow": "Suivre cette wilaya",
+    "unfollow": "Ne plus suivre",
+    "following": "Suivi"
+  },
+  "time": {
+    "justNow": "à l'instant",
+    "minAgo": "il y a {n} min",
+    "hAgo": "il y a {n} h",
+    "dAgo": "il y a {n} j",
+    "unknown": "heure inconnue"
+  },
+  "statBadge": {
+    "activeFires": "feux actifs",
+    "ofHotspotsUpdated": "sur {total} points chauds · mis à jour {time}",
+    "howDetectedAria": "Comment les feux sont confirmés",
+    "howDetectedTitle": "Comment les feux sont détectés",
+    "howConfirmedTitle": "Comment nous les confirmons"
+  },
+  "fireDetail": {
+    "intensitySuffix": "intensité {level}",
+    "activeFireDetection": "Détection de feu actif",
+    "location": "Emplacement",
+    "locating": "Localisation…",
+    "wilayaOf": "Wilaya de {name}",
+    "remoteArea": "Zone éloignée",
+    "fireRadiativePower": "Puissance radiative du feu",
+    "confidence": "Confiance",
+    "detected": "Détecté",
+    "satellite": "Satellite",
+    "timeOfDay": "Moment de la journée",
+    "brightness": "Luminosité",
+    "coordinates": "Coordonnées",
+    "sourceNote": "Source : NASA FIRMS (VIIRS / MODIS). Temps quasi réel — les détections peuvent avoir ~3 h de retard et être masquées par les nuages."
+  },
+  "latestFires": {
+    "title": "Derniers feux"
+  },
+  "timeline": {
+    "goLive": "Passer en direct",
+    "dragOrPlay": "Faites glisser ou jouez pour rejouer les 5 derniers jours",
+    "now": "maintenant",
+    "fires": "{n} feux",
+    "play": "Lire",
+    "pause": "Pause"
+  },
+  "intensity": {
+    "low": "Faible",
+    "moderate": "Modéré",
+    "high": "Élevé",
+    "very-high": "Très élevé",
+    "extreme": "Extrême"
+  },
+  "riskClass": {
+    "very-low": "Très faible",
+    "low": "Faible",
+    "moderate": "Modéré",
+    "high": "Élevé",
+    "very-high": "Très élevé",
+    "extreme": "Extrême"
+  },
+  "confidence": {
+    "low": "Faible",
+    "nominal": "Nominal",
+    "high": "Élevée"
+  },
+  "dayNight": {
+    "D": "Jour",
+    "N": "Nuit",
+    "unknown": "—"
+  },
+  "duration": {
+    "live": "Direct",
+    "24h": "24h",
+    "48h": "48h"
+  },
+  "mapStyle": {
+    "dark": "Sombre",
+    "satellite": "Satellite",
+    "light": "Clair"
+  },
+  "explainers": {
+    "detection": "Les feux sont détectés depuis l'espace par NASA FIRMS. Les satellites polaires — VIIRS sur NOAA-20/21 & Suomi-NPP, et MODIS sur Terra/Aqua — scannent l'Algérie plusieurs fois par jour, signalent les points chauds thermiques et mesurent la puissance radiative de chaque feu (chaleur en MW). Les données arrivent en quasi-temps réel, environ 3 h après le passage du satellite.",
+    "confirmed": "Nous n'affichons ensuite que les feux confirmés : les détections de haute confiance avec une puissance radiative de 15 MW ou plus. Cela filtre le bruit de faible confiance et les petits brûlis agricoles, ne laissant que ce qui est presque certainement un véritable incendie actif.",
+    "fwi": "L'indice FWI (Fire Weather Index) évalue la facilité avec laquelle un feu de forêt pourrait démarrer et se propager aujourd'hui — à partir des seules conditions météo : chaleur, sécheresse, vent et temps écoulé depuis la dernière pluie. Plus il est élevé, plus les conditions sont dangereuses. C'est la norme utilisée par les services d'incendie et l'UE (EFFIS). Note : il indique le risque, pas qu'un feu brûle déjà."
+  },
+  "mapPopup": {
+    "today": "Aujourd'hui",
+    "tomorrow": "Demain",
+    "in2Days": "Dans 2 jours",
+    "outlook": "Prévision 3 jours",
+    "fireWeatherRiskFwi": "Risque météo-feu (FWI)",
+    "rh": "HR",
+    "wind": "vent"
+  }
+}

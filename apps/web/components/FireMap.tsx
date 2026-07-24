@@ -212,6 +212,7 @@ export default function FireMap({ data, selected, onSelect, styleKey, isMobile, 
       id: WILAYA_LAYER,
       type: "symbol",
       source: WILAYA_SRC,
+      maxzoom: 8,
       layout: {
         "text-field": wilayaTextField(localeRef.current),
         "text-font": ["Noto Sans Regular"],
@@ -356,13 +357,15 @@ export default function FireMap({ data, selected, onSelect, styleKey, isMobile, 
     mapRef.current = map;
     // On mobile every corner is used by the UI, so credit is shown in the dock instead.
     if (!mobile) {
+      map.addControl(new maplibregl.NavigationControl({ showCompass: false }), "top-right");
       map.addControl(new maplibregl.AttributionControl({ compact: true }), "bottom-right");
-      map.addControl(new maplibregl.NavigationControl({ showCompass: false }), "bottom-right");
+      const s = document.createElement("style");
+      s.textContent = ".maplibregl-ctrl-top-right { top: 72px !important; }";
+      containerRef.current!.appendChild(s);
     }
     map.on("error", (e) => {
       const msg = e?.error?.message ?? "";
       if (/Failed to fetch|aborted|AbortError/i.test(msg)) return;
-      console.error("[maplibre error]", msg || e);
     });
 
     // style.load fires on first load AND after every setStyle → (re)build overlays.

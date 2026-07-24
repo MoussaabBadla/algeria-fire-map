@@ -51,7 +51,10 @@
     "highestFireRisk": "Highest fire-risk"
   },
   "wilayaRanking": {
-    "mostAffected": "Most affected wilayas"
+    "mostAffected": "Most affected wilayas",
+    "searchPlaceholder": "Search…",
+    "fires": "fires",
+    "notifyHint": "Click the bell icon to get notified"
   },
   "time": {
     "justNow": "just now",
@@ -142,5 +145,14 @@
     "fireWeatherRiskFwi": "Fire-weather risk (FWI)",
     "rh": "RH",
     "wind": "wind"
+  },
+  "alerts": {
+    "title": "New fires",
+    "newFiresIn": "{n} new fire(s) in {name}",
+    "newFiresInMultiple": "{n} new fire(s) in {names}",
+    "view": "View",
+    "follow": "Follow this wilaya",
+    "unfollow": "Unfollow",
+    "following": "Following"
   }
 }

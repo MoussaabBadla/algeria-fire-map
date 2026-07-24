@@ -3,6 +3,7 @@
 // point-in-polygon would need wilaya boundary polygons we don't ship yet.)
 import wilayasData from "./wilayas.json";
 import type { FireFeature } from "./api";
+import type { Locale } from "./i18n/config";
 
 interface WilayaPoint {
   code: number;
@@ -11,7 +12,7 @@ interface WilayaPoint {
   lat: number;
 }
 
-const WILAYAS: WilayaPoint[] = (wilayasData as unknown as {
+export const WILAYAS: WilayaPoint[] = (wilayasData as unknown as {
   features: { geometry: { coordinates: number[] }; properties: { code: number; name: string } }[];
 }).features.map((f) => ({
   code: f.properties.code,
@@ -58,4 +59,29 @@ export function rankWilayas(features: FireFeature[], top = 6): WilayaCount[] {
     else map.set(w.code, { code: w.code, name: w.name, lng: w.lng, lat: w.lat, count: 1 });
   }
   return [...map.values()].sort((a, b) => b.count - a.count).slice(0, top);
+}
+
+const wilayaByCode = new Map(WILAYAS.map((w) => [w.code, w]));
+
+export function searchWilayas(query: string, locale: Locale): WilayaCount[] {
+  const q = query.toLowerCase().trim();
+  if (!q) return [];
+  // Build a searchable entry per wilaya with both Latin and Arabic names
+  const searchIndex = (wilayasData as unknown as {
+    features: { properties: { code: number; name: string; name_ar: string } }[];
+  }).features.map((f) => ({
+    code: f.properties.code,
+    name: f.properties.name,
+    nameAr: f.properties.name_ar,
+  }));
+  return searchIndex
+    .filter((w) => {
+      const latinMatch = w.name.toLowerCase().includes(q);
+      const arabicMatch = locale === "ar" && w.nameAr.includes(q);
+      return latinMatch || arabicMatch;
+    })
+    .map((w) => {
+      const coords = wilayaByCode.get(w.code);
+      return { code: w.code, name: w.name, lng: coords?.lng ?? 0, lat: coords?.lat ?? 0, count: 0 };
+    });
 }
