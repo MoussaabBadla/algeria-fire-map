@@ -90,18 +90,21 @@ async def national_summary() -> dict:
         )
         # Most-affected wilayas — all-time and current year.
         cur_year = kpi["last_date"].year if kpi["last_date"] else None
+        # Rank by CONFIRMED fires, not raw detections — raw counts are inflated
+        # by persistent industrial gas-flares (e.g. Ghardaïa) that the confirmed
+        # filter (high-confidence & FRP>=15) largely excludes.
         top_all = await conn.fetch(
             """select s.wilaya_code code, w.name, w.name_ar,
                       sum(s.detections)::int det, sum(s.confirmed)::int conf
                from stats_monthly s join wilayas w on w.code = s.wilaya_code
-               group by 1,2,3 order by det desc limit 12"""
+               group by 1,2,3 order by conf desc, det desc limit 12"""
         )
         top_year = await conn.fetch(
             """select s.wilaya_code code, w.name, w.name_ar,
                       sum(s.detections)::int det, sum(s.confirmed)::int conf
                from stats_monthly s join wilayas w on w.code = s.wilaya_code
                where s.year = $1
-               group by 1,2,3 order by det desc limit 12""",
+               group by 1,2,3 order by conf desc, det desc limit 12""",
             cur_year,
         )
         frp = await conn.fetchrow(_FRP_BUCKETS_SQL)
