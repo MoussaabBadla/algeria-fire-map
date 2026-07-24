@@ -159,6 +159,46 @@ export async function fetchStats(url: string): Promise<StatsData> {
   return res.json();
 }
 
+// --- Per-wilaya statistics (/stats/wilaya/{code}) ---
+export interface WilayaIncident {
+  id: number;
+  first_seen: string | null;
+  last_seen: string | null;
+  detection_count: number;
+  max_frp: number | null;
+  is_active: boolean;
+}
+
+export interface WilayaStatsData {
+  enabled: boolean;
+  found: boolean;
+  wilaya: { code: number; name: string; name_ar: string };
+  kpis: {
+    detections: number;
+    confirmed: number;
+    this_year: number;
+    rank: number;
+    ranked_total: number;
+    share_pct: number;
+    biggest_frp: number | null;
+  };
+  coverage: { current_year: number | null };
+  by_year: { year: number; detections: number; confirmed: number }[];
+  by_month: { month: number; detections: number }[];
+  frp_buckets: number[];
+  incidents: WilayaIncident[];
+}
+
+export async function fetchWilayaStats(code: number): Promise<WilayaStatsData | null> {
+  try {
+    const res = await fetch(`${API_URL}/stats/wilaya/${code}`, { next: { revalidate: 900 } });
+    if (!res.ok) return null;
+    return (await res.json()) as WilayaStatsData;
+  } catch {
+    return null;
+  }
+}
+
 export interface RiskDay {
   fwi: number;
   class: string;

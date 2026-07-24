@@ -213,6 +213,21 @@
     "vsAvg": "{mult}× the yearly average",
     "peakTakeaway": "{month} accounts for {pct}% of the year's fire activity.",
     "yearTakeaway": "{year} was the worst year on record — {mult}× the multi-year average.",
-    "intensityTakeaway": "Most detections are low-power; the largest {pct}% (≥ 50 MW) do the real damage."
+    "intensityTakeaway": "Most detections are low-power; the largest {pct}% (≥ 50 MW) do the real damage.",
+    "wilaya": {
+      "subtitle": "Wildfire activity in {name}, from NASA FIRMS satellite data.",
+      "rankLabel": "National rank",
+      "rankValue": "#{rank} of {total}",
+      "shareLabel": "Share of Algeria",
+      "shareSub": "of all confirmed fires",
+      "biggestLabel": "Largest fire",
+      "insight": "{name} ranks #{rank} of {total} wilayas — {pct}% of Algeria's confirmed fires. {year} was its worst year.",
+      "insightNoWorst": "{name} ranks #{rank} of {total} wilayas, with {pct}% of Algeria's confirmed fires.",
+      "incidentsTitle": "Recent incidents",
+      "incidentsDesc": "Confirmed fire incidents in this wilaya, most recent first.",
+      "noIncidents": "No confirmed incidents on record for this wilaya.",
+      "notFound": "Wilaya not found.",
+      "backToStats": "All wilayas"
+    }
   }
 }
