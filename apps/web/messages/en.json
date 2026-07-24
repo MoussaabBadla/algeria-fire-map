@@ -21,7 +21,20 @@
     "fireRiskFwi": "Fire risk (FWI)",
     "on": "on",
     "live": "LIVE",
-    "replayBadge": "REPLAY"
+    "replayBadge": "REPLAY",
+    "incidents": "Incidents"
+  },
+  "incident": {
+    "title": "Fire incident",
+    "active": "Active",
+    "contained": "Contained",
+    "firstSeen": "First seen",
+    "lastSeen": "Last seen",
+    "duration": "Duration",
+    "detections": "Detections",
+    "peakPower": "Peak power",
+    "days": "{n} days",
+    "hours": "{n}h"
   },
   "legend": {
     "firePowerMw": "Fire power (MW)",

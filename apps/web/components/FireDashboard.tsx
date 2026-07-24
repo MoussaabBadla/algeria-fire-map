@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import dynamic from "next/dynamic";
 import useSWR from "swr";
-import { fetchFires, fetchRisk, firesKey, riskKey, type FireCollection, type FireFeature, type RiskData, type RiskWilaya, type SelectedFire } from "@/lib/api";
+import { fetchFires, fetchRisk, fetchEvents, firesKey, riskKey, eventsKey, type EventCollection, type FireCollection, type FireFeature, type RiskData, type RiskWilaya, type SelectedFire } from "@/lib/api";
 import { durationFor, passesFilter, withinAge, type DurationKey } from "@/lib/fire";
 import { rankWilayas, type WilayaCount } from "@/lib/wilayaAssign";
 import type { MapStyleKey } from "@/lib/mapStyles";
@@ -51,6 +51,7 @@ export default function FireDashboard() {
   const [rankingOpen, setRankingOpen] = useState(false);
   const [latestOpen, setLatestOpen] = useState(false);
   const [showRisk, setShowRisk] = useState(false);
+  const [showIncidents, setShowIncidents] = useState(false);
   const [historyMode, setHistoryMode] = useState(false);
   const [cursor, setCursor] = useState(0);
   const [playing, setPlaying] = useState(false);
@@ -69,6 +70,12 @@ export default function FireDashboard() {
   });
   const { data: riskData } = useSWR<RiskData>(showRisk ? riskKey() : null, fetchRisk, {
     refreshInterval: 30 * 60 * 1000,
+    revalidateOnFocus: false,
+    keepPreviousData: true,
+  });
+  // Incidents (clustered fire_events) — last 90 days, refreshed on the ingest cadence.
+  const { data: incidentsData } = useSWR<EventCollection>(showIncidents ? eventsKey({ days: 90, limit: 1000 }) : null, fetchEvents, {
+    refreshInterval: 10 * 60 * 1000,
     revalidateOnFocus: false,
     keepPreviousData: true,
   });
@@ -190,12 +197,24 @@ export default function FireDashboard() {
     setRankingOpen(false);
   };
 
+  const toggleIncidents = () => {
+    setShowIncidents((v) => {
+      const next = !v;
+      if (next) {
+        setShowRisk(false); // incidents & risk are separate map modes
+        setSelected(null);
+      }
+      return next;
+    });
+  };
+
   const enterHistory = () => {
     needInit.current = true;
     setHistoryMode(true);
     setPlaying(false);
     setRankingOpen(false);
     setSelected(null);
+    setShowIncidents(false);
   };
 
   const exitHistory = () => {
@@ -214,7 +233,7 @@ export default function FireDashboard() {
 
   return (
     <main style={{ position: "fixed", inset: 0, background: "var(--bg)" }}>
-      <FireMap data={displayed} selected={selected} onSelect={setSelected} styleKey={styleKey} isMobile={isMobile} focus={focus} riskData={riskData} showRisk={showRisk} />
+      <FireMap data={displayed} selected={selected} onSelect={setSelected} styleKey={styleKey} isMobile={isMobile} focus={focus} riskData={riskData} showRisk={showRisk} incidents={incidentsData} showIncidents={showIncidents} />
 
       <TopBar
         isMobile={isMobile}
@@ -242,6 +261,8 @@ export default function FireDashboard() {
         }}
         showRisk={showRisk}
         onToggleRisk={() => setShowRisk((v) => !v)}
+        showIncidents={showIncidents}
+        onToggleIncidents={toggleIncidents}
       />
 
       {!isMobile && (showRisk ? <RiskLegend /> : <Legend />)}
