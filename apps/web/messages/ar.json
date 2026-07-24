@@ -21,7 +21,20 @@
     "fireRiskFwi": "خطر الحريق (FWI)",
     "on": "مفعّل",
     "live": "مباشر",
-    "replayBadge": "إعادة"
+    "replayBadge": "إعادة",
+    "incidents": "الحرائق"
+  },
+  "incident": {
+    "title": "حريق",
+    "active": "نشط",
+    "contained": "تحت السيطرة",
+    "firstSeen": "أول رصد",
+    "lastSeen": "آخر رصد",
+    "duration": "المدة",
+    "detections": "الرصدات",
+    "peakPower": "أقصى شدة",
+    "days": "{n} أيام",
+    "hours": "{n} ساعة"
   },
   "legend": {
     "firePowerMw": "قوة الحريق (ميغاواط)",

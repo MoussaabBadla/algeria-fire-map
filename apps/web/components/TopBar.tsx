@@ -7,7 +7,7 @@ import Segmented from "./Segmented";
 import StatBadge from "./StatBadge";
 import RiskLegend from "./RiskLegend";
 import LanguageSwitcher from "./LanguageSwitcher";
-import { ClockIcon, FlameIcon, GitHubIcon } from "./Icons";
+import { ClockIcon, FlameIcon, GitHubIcon, PinIcon } from "./Icons";
 
 const REPO_URL = "https://github.com/MoussaabBadla/algeria-fire-map";
 const AUTHOR_URL = "https://github.com/MoussaabBadla";
@@ -30,6 +30,8 @@ interface Props {
   onToggleLatest: () => void;
   showRisk: boolean;
   onToggleRisk: () => void;
+  showIncidents: boolean;
+  onToggleIncidents: () => void;
 }
 
 type T = ReturnType<typeof useTranslations>;
@@ -127,7 +129,7 @@ const activeToggle: React.CSSProperties = {
 };
 
 export default function TopBar(props: Props) {
-  const { isMobile, styleKey, onStyleChange, duration, onDurationChange, historyMode, onEnterHistory, onToggleRanking, onToggleLatest, showRisk, onToggleRisk } = props;
+  const { isMobile, styleKey, onStyleChange, duration, onDurationChange, historyMode, onEnterHistory, onToggleRanking, onToggleLatest, showRisk, onToggleRisk, showIncidents, onToggleIncidents } = props;
   const t = useTranslations();
 
   const styleOpts = MAP_STYLES.map((s) => ({ key: s.key, label: t(`mapStyle.${s.key}`) }));
@@ -162,6 +164,7 @@ export default function TopBar(props: Props) {
             </div>
             <div style={{ display: "flex", gap: 8 }}>
               <button style={{ ...secondaryBtn, ...(showRisk ? activeToggle : {}) }} onClick={onToggleRisk}>{t("topBar.risk")}</button>
+              <button style={{ ...secondaryBtn, ...(showIncidents ? activeToggle : {}) }} onClick={onToggleIncidents}>{t("topBar.incidents")}</button>
               <button style={secondaryBtn} onClick={onEnterHistory}><ClockIcon size={15} /> {t("topBar.replay")}</button>
             </div>
             <GitHubLink t={t} />
@@ -194,6 +197,9 @@ export default function TopBar(props: Props) {
       </div>
       <button style={{ ...secondaryBtn, width: "100%", marginBottom: 8, ...(showRisk ? activeToggle : {}) }} onClick={onToggleRisk}>
         <FlameIcon size={14} color={showRisk ? "#ff9e3d" : "var(--text-secondary)"} /> {t("topBar.fireRiskFwi")}{showRisk ? ` · ${t("topBar.on")}` : ""}
+      </button>
+      <button style={{ ...secondaryBtn, width: "100%", marginBottom: 8, ...(showIncidents ? activeToggle : {}) }} onClick={onToggleIncidents}>
+        <PinIcon size={14} color={showIncidents ? "#ff9e3d" : "var(--text-secondary)"} /> {t("topBar.incidents")}{showIncidents ? ` · ${t("topBar.on")}` : ""}
       </button>
       {!historyMode && (
         <button style={{ ...secondaryBtn, width: "100%" }} onClick={onEnterHistory}>

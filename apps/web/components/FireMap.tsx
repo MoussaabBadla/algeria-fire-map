@@ -3,7 +3,7 @@
 import { useEffect, useRef } from "react";
 import * as maplibregl from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
-import type { FireCollection, RiskData, SelectedFire } from "@/lib/api";
+import type { EventCollection, FireCollection, RiskData, SelectedFire } from "@/lib/api";
 import { riskColor, riskLabel } from "@/lib/risk";
 import { styleFor, type MapStyleKey } from "@/lib/mapStyles";
 import { useLocale, useTranslations } from "@/lib/i18n/LocaleProvider";
@@ -22,6 +22,11 @@ const WILAYA_SRC = "wilayas";
 const WILAYA_LAYER = "wilaya-labels";
 const RISK_SRC = "risk";
 const RISK_LAYER = "risk-circles";
+const INC_SRC = "incidents";
+const INC_HULL_SRC = "incident-hulls";
+const INC_POINT_LAYER = "incident-points";
+const INC_HULL_FILL = "incident-hull-fill";
+const INC_HULL_LINE = "incident-hull-line";
 const MASK_SRC = "mask";
 const BORDER_SRC = "algeria-border";
 
@@ -69,6 +74,52 @@ interface Props {
   focus: { lng: number; lat: number; zoom: number; nonce: number } | null;
   riskData: RiskData | undefined;
   showRisk: boolean;
+  incidents: EventCollection | undefined;
+  showIncidents: boolean;
+}
+
+const EMPTY_FC: GeoJSON.FeatureCollection = { type: "FeatureCollection", features: [] };
+
+// Incident point: amber when active (seen recently), slate-grey when contained.
+const INC_COLOR: maplibregl.ExpressionSpecification = [
+  "case", ["boolean", ["get", "is_active"], false], "#fb5607", "#64748b",
+];
+
+// Incident points → GeoJSON (drop the hull so it doesn't ride along as a prop).
+function incidentPoints(ev: EventCollection | undefined): GeoJSON.FeatureCollection {
+  if (!ev) return EMPTY_FC;
+  return {
+    type: "FeatureCollection",
+    features: ev.features.map((f) => ({
+      type: "Feature",
+      geometry: f.geometry,
+      properties: {
+        id: f.properties.id,
+        is_active: f.properties.is_active,
+        detection_count: f.properties.detection_count,
+        max_frp: f.properties.max_frp,
+        total_frp: f.properties.total_frp,
+        first_seen: f.properties.first_seen,
+        last_seen: f.properties.last_seen,
+        wilaya_code: f.properties.wilaya_code,
+      },
+    })),
+  };
+}
+
+// Affected-area hull polygons for incidents that have one (>=3 detections).
+function incidentHulls(ev: EventCollection | undefined): GeoJSON.FeatureCollection {
+  if (!ev) return EMPTY_FC;
+  return {
+    type: "FeatureCollection",
+    features: ev.features
+      .filter((f) => f.properties.hull)
+      .map((f) => ({
+        type: "Feature",
+        geometry: f.properties.hull as GeoJSON.Polygon,
+        properties: { id: f.properties.id, is_active: f.properties.is_active },
+      })),
+  };
 }
 
 const RISK_COLOR_EXPR: maplibregl.ExpressionSpecification = [
@@ -100,7 +151,7 @@ function riskGeoJSON(risk: RiskData | undefined): GeoJSON.FeatureCollection {
   };
 }
 
-export default function FireMap({ data, selected, onSelect, styleKey, isMobile, focus, riskData, showRisk }: Props) {
+export default function FireMap({ data, selected, onSelect, styleKey, isMobile, focus, riskData, showRisk, incidents, showIncidents }: Props) {
   const t = useTranslations();
   const { locale } = useLocale();
   const isMobileRef = useRef(isMobile);
@@ -109,6 +160,10 @@ export default function FireMap({ data, selected, onSelect, styleKey, isMobile, 
   const showRiskRef = useRef(showRisk);
   riskDataRef.current = riskData;
   showRiskRef.current = showRisk;
+  const incidentsRef = useRef(incidents);
+  const showIncidentsRef = useRef(showIncidents);
+  incidentsRef.current = incidents;
+  showIncidentsRef.current = showIncidents;
   // The map click handler is bound once; read the latest translator/locale
   // through refs so popups always render in the current language.
   const tRef = useRef<Translator>(t);
@@ -233,9 +288,54 @@ export default function FireMap({ data, selected, onSelect, styleKey, isMobile, 
       },
     });
 
+    // Incidents (clustered fire_events) — hull polygons + points, on top of
+    // fires, toggled via visibility. A separate mode from live fires/risk.
+    const incVis = showIncidentsRef.current ? "visible" : "none";
+    if (!map.getSource(INC_HULL_SRC)) map.addSource(INC_HULL_SRC, { type: "geojson", data: incidentHulls(incidentsRef.current) });
+    map.addLayer({
+      id: INC_HULL_FILL,
+      type: "fill",
+      source: INC_HULL_SRC,
+      layout: { visibility: incVis },
+      paint: { "fill-color": INC_COLOR, "fill-opacity": 0.12 },
+    });
+    map.addLayer({
+      id: INC_HULL_LINE,
+      type: "line",
+      source: INC_HULL_SRC,
+      layout: { visibility: incVis },
+      paint: { "line-color": INC_COLOR, "line-width": 1.2, "line-opacity": 0.7 },
+    });
+
+    if (!map.getSource(INC_SRC)) map.addSource(INC_SRC, { type: "geojson", data: incidentPoints(incidentsRef.current), generateId: true });
+    map.addLayer({
+      id: INC_POINT_LAYER,
+      type: "circle",
+      source: INC_SRC,
+      layout: { visibility: incVis },
+      paint: {
+        // Radius grows with how many detections make up the incident.
+        "circle-radius": [
+          "interpolate", ["linear"], ["zoom"],
+          5, ["interpolate", ["linear"], ["get", "detection_count"], 1, 4, 200, 12],
+          10, ["interpolate", ["linear"], ["get", "detection_count"], 1, 7, 200, 26],
+        ],
+        "circle-color": INC_COLOR,
+        "circle-opacity": 0.82,
+        "circle-stroke-color": "#ffffff",
+        "circle-stroke-width": ["case", ["boolean", ["get", "is_active"], false], 1.4, 0.6],
+        "circle-stroke-opacity": 0.85,
+      },
+    });
+
     // Push current data onto the freshly-created source.
     const src = map.getSource(FIRES_SRC) as maplibregl.GeoJSONSource | undefined;
     if (src && dataRef.current) src.setData(dataRef.current as unknown as GeoJSON.FeatureCollection);
+
+    // Fires/heat are hidden while in incidents mode.
+    const firesVisible = showIncidentsRef.current ? "none" : "visible";
+    map.setLayoutProperty(HEAT_LAYER, "visibility", firesVisible);
+    map.setLayoutProperty(CIRCLE_LAYER, "visibility", firesVisible);
   }
 
   // Init map once.
@@ -347,6 +447,53 @@ export default function FireMap({ data, selected, onSelect, styleKey, isMobile, 
     map.on("mouseenter", RISK_LAYER, () => (map.getCanvas().style.cursor = "pointer"));
     map.on("mouseleave", RISK_LAYER, () => (map.getCanvas().style.cursor = ""));
 
+    // Incident point → incident popup (lifespan, size, intensity, wilaya).
+    map.on("click", INC_POINT_LAYER, (e) => {
+      const f = e.features?.[0];
+      if (!f) return;
+      const p = f.properties as {
+        id: number; is_active: boolean | string; detection_count: number;
+        max_frp: number | null; first_seen: string | null; last_seen: string | null;
+        wilaya_code: number | null;
+      };
+      const [lng, lat] = (f.geometry as GeoJSON.Point).coordinates as [number, number];
+      const tr = tRef.current;
+      const loc = localeRef.current;
+      const dir = dirFor(loc);
+      const active = p.is_active === true || p.is_active === "true";
+      const wname = p.wilaya_code != null ? wilayaName(p.wilaya_code, loc) : "";
+      const fmt = (iso: string | null) =>
+        iso ? new Date(iso).toLocaleString(loc === "ar" ? "ar-DZ" : "en-GB", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" }) : "—";
+      // Human duration between first & last seen.
+      let dur = "—";
+      if (p.first_seen && p.last_seen) {
+        const ms = Date.parse(p.last_seen) - Date.parse(p.first_seen);
+        const h = Math.round(ms / 3_600_000);
+        dur = h >= 48 ? tr("incident.days", { n: Math.round(h / 24) }) : tr("incident.hours", { n: Math.max(h, 1) });
+      }
+      const badge = active
+        ? `<span style="color:#fb5607;font-weight:700">● ${tr("incident.active")}</span>`
+        : `<span style="color:#64748b;font-weight:700">● ${tr("incident.contained")}</span>`;
+      const row = (label: string, val: string) =>
+        `<div style="display:flex;justify-content:space-between;gap:14px;padding:2px 0;font-size:12px"><span style="color:#666">${label}</span><span style="font-weight:600;color:#111">${val}</span></div>`;
+      const html = `
+        <div dir="${dir}" style="font:13px system-ui,sans-serif;min-width:210px;color:#111;text-align:start">
+          <div style="display:flex;justify-content:space-between;align-items:center;gap:10px">
+            <div style="font-weight:700;font-size:14px">${wname || tr("incident.title")}</div>
+            <div style="font-size:11px">${badge}</div>
+          </div>
+          <div style="color:#777;font-size:11px;margin-bottom:8px">${tr("incident.title")}</div>
+          ${row(tr("incident.firstSeen"), fmt(p.first_seen))}
+          ${row(tr("incident.lastSeen"), fmt(p.last_seen))}
+          ${row(tr("incident.duration"), dur)}
+          ${row(tr("incident.detections"), String(p.detection_count))}
+          ${row(tr("incident.peakPower"), p.max_frp != null ? `${Math.round(p.max_frp)} MW` : "—")}
+        </div>`;
+      new maplibregl.Popup({ closeButton: true, maxWidth: "260px" }).setLngLat([lng, lat]).setHTML(html).addTo(map);
+    });
+    map.on("mouseenter", INC_POINT_LAYER, () => (map.getCanvas().style.cursor = "pointer"));
+    map.on("mouseleave", INC_POINT_LAYER, () => (map.getCanvas().style.cursor = ""));
+
     return () => {
       map.remove();
       mapRef.current = null;
@@ -391,6 +538,30 @@ export default function FireMap({ data, selected, onSelect, styleKey, isMobile, 
     if (!map || !readyRef.current) return;
     if (map.getLayer(RISK_LAYER)) map.setLayoutProperty(RISK_LAYER, "visibility", showRisk ? "visible" : "none");
   }, [showRisk]);
+
+  // Push incident data (points + hulls).
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !readyRef.current) return;
+    const ps = map.getSource(INC_SRC) as maplibregl.GeoJSONSource | undefined;
+    if (ps) ps.setData(incidentPoints(incidents));
+    const hs = map.getSource(INC_HULL_SRC) as maplibregl.GeoJSONSource | undefined;
+    if (hs) hs.setData(incidentHulls(incidents));
+  }, [incidents]);
+
+  // Toggle incidents mode: show incident layers, hide fires/heat while on.
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !readyRef.current) return;
+    const incVis = showIncidents ? "visible" : "none";
+    for (const id of [INC_POINT_LAYER, INC_HULL_FILL, INC_HULL_LINE]) {
+      if (map.getLayer(id)) map.setLayoutProperty(id, "visibility", incVis);
+    }
+    const firesVis = showIncidents ? "none" : "visible";
+    for (const id of [HEAT_LAYER, CIRCLE_LAYER]) {
+      if (map.getLayer(id)) map.setLayoutProperty(id, "visibility", firesVis);
+    }
+  }, [showIncidents]);
 
   // Re-label wilayas when the locale changes (Arabic ⇄ Latin).
   useEffect(() => {
