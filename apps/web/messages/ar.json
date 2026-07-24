@@ -38,7 +38,10 @@
     "highestFireRisk": "الأعلى خطورةً"
   },
   "wilayaRanking": {
-    "mostAffected": "الولايات الأكثر تضررًا"
+    "mostAffected": "الولايات الأكثر تضررًا",
+    "searchPlaceholder": "بحث…",
+    "fires": "حريق",
+    "notifyHint": "انقر على الجرس للإشعار"
   },
   "time": {
     "justNow": "الآن",
@@ -129,5 +132,14 @@
     "fireWeatherRiskFwi": "خطر الطقس الناري (FWI)",
     "rh": "الرطوبة",
     "wind": "الرياح"
+  },
+  "alerts": {
+    "title": "حرائق جديدة",
+    "newFiresIn": "{n} حريق(ا) جديد(ة) في {name}",
+    "newFiresInMultiple": "{n} حرائق جديدة في {names}",
+    "view": "عرض",
+    "follow": "متابعة هذه الولاية",
+    "unfollow": "إلغاء المتابعة",
+    "following": "متابع"
   }
 }
