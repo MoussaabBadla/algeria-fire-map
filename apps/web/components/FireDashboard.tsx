@@ -8,6 +8,7 @@ import { durationFor, passesFilter, withinAge, type DurationKey } from "@/lib/fi
 import { rankWilayas, type WilayaCount } from "@/lib/wilayaAssign";
 import type { MapStyleKey } from "@/lib/mapStyles";
 import { useIsMobile } from "@/lib/useIsMobile";
+import { useTranslations } from "@/lib/i18n/LocaleProvider";
 import TopBar from "./TopBar";
 import Legend from "./Legend";
 import FireDetailPanel from "./FireDetailPanel";
@@ -17,13 +18,18 @@ import RiskLegend from "./RiskLegend";
 import RiskPanel from "./RiskPanel";
 import LatestFires from "./LatestFires";
 
+function MapLoading() {
+  const t = useTranslations();
+  return (
+    <div style={{ position: "absolute", inset: 0, display: "grid", placeItems: "center", color: "var(--text-muted)", fontSize: 14 }}>
+      {t("common.loadingMap")}
+    </div>
+  );
+}
+
 const FireMap = dynamic(() => import("./FireMap"), {
   ssr: false,
-  loading: () => (
-    <div style={{ position: "absolute", inset: 0, display: "grid", placeItems: "center", color: "var(--text-muted)", fontSize: 14 }}>
-      Loading map…
-    </div>
-  ),
+  loading: () => <MapLoading />,
 });
 
 const HISTORY_DAYS = 5; // FIRMS Area API caps the look-back at 5 days

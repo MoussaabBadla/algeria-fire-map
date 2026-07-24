@@ -58,6 +58,12 @@ body {
   overflow: hidden;
 }
 
+/* Arabic (and any RTL locale): prefer the Arabic webfont, keep Latin fallbacks. */
+html[dir="rtl"] body {
+  font-family: var(--font-arabic), -apple-system, BlinkMacSystemFont, "Segoe UI",
+    var(--font-geist-sans), system-ui, sans-serif;
+}
+
 /* ===== Glass panel ===== */
 .glass {
   background: var(--surface);
@@ -77,6 +83,10 @@ body {
   from { opacity: 0; transform: translateX(24px); }
   to { opacity: 1; transform: translateX(0); }
 }
+@keyframes slideInLeft {
+  from { opacity: 0; transform: translateX(-24px); }
+  to { opacity: 1; transform: translateX(0); }
+}
 @keyframes livePulse {
   0%, 100% { opacity: 1; transform: scale(1); }
   50% { opacity: 0.45; transform: scale(0.82); }
@@ -93,6 +103,8 @@ body {
 
 .animate-in { animation: fadeSlideUp 0.4s cubic-bezier(0.22, 1, 0.36, 1) both; }
 .panel-in { animation: slideInRight 0.34s cubic-bezier(0.22, 1, 0.36, 1) both; }
+/* In RTL the detail panel sits on the left edge, so it should enter from the left. */
+html[dir="rtl"] .panel-in { animation-name: slideInLeft; }
 .sheet-in { animation: sheetUp 0.34s cubic-bezier(0.22, 1, 0.36, 1) both; }
 
 /* ===== Selected-fire pulsing marker ===== */

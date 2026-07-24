@@ -21,15 +21,14 @@ const SATELLITE_STYLE: StyleSpecification = {
 };
 
 export interface MapStyleDef {
-  key: MapStyleKey;
-  label: string;
+  key: MapStyleKey; // display label comes from t(`mapStyle.${key}`)
   style: string | StyleSpecification;
 }
 
 export const MAP_STYLES: MapStyleDef[] = [
-  { key: "dark", label: "Dark", style: "https://tiles.openfreemap.org/styles/dark" },
-  { key: "satellite", label: "Satellite", style: SATELLITE_STYLE },
-  { key: "light", label: "Light", style: "https://tiles.openfreemap.org/styles/positron" },
+  { key: "dark", style: "https://tiles.openfreemap.org/styles/dark" },
+  { key: "satellite", style: SATELLITE_STYLE },
+  { key: "light", style: "https://tiles.openfreemap.org/styles/positron" },
 ];
 
 export function styleFor(key: MapStyleKey): string | StyleSpecification {

@@ -3,6 +3,7 @@
 import { useMemo, useRef } from "react";
 import type { FireFeature } from "@/lib/api";
 import { formatAlgeriaTime } from "@/lib/fire";
+import { useTranslations } from "@/lib/i18n/LocaleProvider";
 import { PauseIcon, PlayIcon } from "./Icons";
 
 const BINS = 48;
@@ -32,6 +33,7 @@ export default function TimelineScrubber({
   onExit,
   isMobile,
 }: Props) {
+  const t = useTranslations();
   const trackRef = useRef<HTMLDivElement>(null);
   const dragging = useRef(false);
   const range = Math.max(1, maxTime - minTime);
@@ -59,8 +61,8 @@ export default function TimelineScrubber({
   };
 
   const shell: React.CSSProperties = isMobile
-    ? { position: "absolute", left: 12, right: 12, bottom: "calc(12px + env(safe-area-inset-bottom))", zIndex: 22, padding: 14 }
-    : { position: "absolute", left: 232, right: 72, bottom: 16, zIndex: 22, padding: 14, maxWidth: 720, margin: "0 auto" };
+    ? { position: "absolute", insetInlineStart: 12, insetInlineEnd: 12, maxWidth: 640, marginInline: "auto", bottom: "calc(12px + env(safe-area-inset-bottom))", zIndex: 22, padding: 14 }
+    : { position: "absolute", insetInlineStart: 232, insetInlineEnd: 72, bottom: 16, zIndex: 22, padding: 14, maxWidth: 720, margin: "0 auto" };
 
   return (
     <div className="glass animate-in" style={shell}>
@@ -69,13 +71,13 @@ export default function TimelineScrubber({
           {formatAlgeriaTime(new Date(cursor).toISOString())}
         </span>
         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-          <span style={{ fontSize: 12, color: "var(--text-muted)" }}>{shownCount} fires</span>
+          <span style={{ fontSize: 12, color: "var(--text-muted)" }}>{t("timeline.fires", { n: shownCount })}</span>
           <button
             onClick={onExit}
             style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "6px 13px", borderRadius: 99, border: "none", background: "#10b981", color: "#fff", fontSize: 12, fontWeight: 700, cursor: "pointer", letterSpacing: "0.02em", boxShadow: "0 2px 10px rgba(16,185,129,0.35)" }}
           >
             <span style={{ width: 7, height: 7, borderRadius: "50%", background: "#fff", animation: "livePulse 2s ease-in-out infinite" }} />
-            Go live
+            {t("timeline.goLive")}
           </button>
         </div>
       </div>
@@ -83,7 +85,7 @@ export default function TimelineScrubber({
       <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
         <button
           onClick={onPlayToggle}
-          aria-label={playing ? "Pause" : "Play"}
+          aria-label={playing ? t("timeline.pause") : t("timeline.play")}
           style={{ width: 38, height: 38, borderRadius: 999, border: "none", background: "var(--accent)", color: "#fff", cursor: "pointer", display: "grid", placeItems: "center", flexShrink: 0, boxShadow: "0 2px 10px rgba(255,122,26,0.3)" }}
         >
           {playing ? <PauseIcon size={16} /> : <PlayIcon size={16} />}
@@ -99,7 +101,7 @@ export default function TimelineScrubber({
           }}
           onPointerMove={(e) => dragging.current && setFromClientX(e.clientX)}
           onPointerUp={() => (dragging.current = false)}
-          style={{ position: "relative", flex: 1, height: 44, cursor: "pointer", touchAction: "none" }}
+          style={{ position: "relative", flex: 1, height: 44, cursor: "pointer", touchAction: "none", direction: "ltr" }}
         >
           <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "flex-end", gap: 1 }}>
             {hist.map((h, i) => (
@@ -113,10 +115,10 @@ export default function TimelineScrubber({
         </div>
       </div>
 
-      <div style={{ display: "flex", justifyContent: "space-between", marginTop: 6, fontSize: 10, color: "var(--text-muted)" }}>
+      <div style={{ display: "flex", justifyContent: "space-between", marginTop: 6, fontSize: 10, color: "var(--text-muted)", direction: "ltr" }}>
         <span>{formatAlgeriaTime(new Date(minTime).toISOString())}</span>
-        <span>Drag or play to replay the last 5 days</span>
-        <span>now</span>
+        <span>{t("timeline.dragOrPlay")}</span>
+        <span>{t("timeline.now")}</span>
       </div>
     </div>
   );

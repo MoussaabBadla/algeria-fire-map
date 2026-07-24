@@ -5,14 +5,16 @@ import wilayasData from "./wilayas.json";
 import type { FireFeature } from "./api";
 
 interface WilayaPoint {
-  name: string;
+  code: number;
+  name: string; // Latin name — kept as a stable key; display uses wilayaName(code, locale)
   lng: number;
   lat: number;
 }
 
 const WILAYAS: WilayaPoint[] = (wilayasData as unknown as {
-  features: { geometry: { coordinates: number[] }; properties: { name: string } }[];
+  features: { geometry: { coordinates: number[] }; properties: { code: number; name: string } }[];
 }).features.map((f) => ({
+  code: f.properties.code,
   name: f.properties.name,
   lng: f.geometry.coordinates[0],
   lat: f.geometry.coordinates[1],
@@ -34,25 +36,26 @@ function nearestWilaya(lng: number, lat: number): WilayaPoint {
   return best;
 }
 
-export function nearestWilayaName(lng: number, lat: number): string {
-  return nearestWilaya(lng, lat).name;
+export function nearestWilayaCode(lng: number, lat: number): number {
+  return nearestWilaya(lng, lat).code;
 }
 
 export interface WilayaCount {
-  name: string;
+  code: number;
+  name: string; // Latin name — stable key; display uses wilayaName(code, locale)
   lng: number;
   lat: number;
   count: number;
 }
 
 export function rankWilayas(features: FireFeature[], top = 6): WilayaCount[] {
-  const map = new Map<string, WilayaCount>();
+  const map = new Map<number, WilayaCount>();
   for (const f of features) {
     const [lng, lat] = f.geometry.coordinates;
     const w = nearestWilaya(lng, lat);
-    const existing = map.get(w.name);
+    const existing = map.get(w.code);
     if (existing) existing.count += 1;
-    else map.set(w.name, { name: w.name, lng: w.lng, lat: w.lat, count: 1 });
+    else map.set(w.code, { code: w.code, name: w.name, lng: w.lng, lat: w.lat, count: 1 });
   }
   return [...map.values()].sort((a, b) => b.count - a.count).slice(0, top);
 }

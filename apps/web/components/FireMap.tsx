@@ -6,6 +6,9 @@ import "maplibre-gl/dist/maplibre-gl.css";
 import type { FireCollection, RiskData, SelectedFire } from "@/lib/api";
 import { riskColor, riskLabel } from "@/lib/risk";
 import { styleFor, type MapStyleKey } from "@/lib/mapStyles";
+import { useLocale, useTranslations } from "@/lib/i18n/LocaleProvider";
+import { dirFor, type Locale, type Translator } from "@/lib/i18n/config";
+import { wilayaName } from "@/lib/i18n/wilayaNames";
 import wilayasData from "@/lib/wilayas.json";
 import algeriaBorder from "@/lib/algeria-border.json";
 
@@ -79,6 +82,12 @@ const RISK_COLOR_EXPR: maplibregl.ExpressionSpecification = [
   "#eab308",
 ];
 
+// Wilaya labels: Arabic uses the `name_ar` property (shaped by the RTL text
+// plugin); every other locale uses the Latin `name`.
+function wilayaTextField(locale: Locale): maplibregl.ExpressionSpecification {
+  return ["get", locale === "ar" ? "name_ar" : "name"];
+}
+
 function riskGeoJSON(risk: RiskData | undefined): GeoJSON.FeatureCollection {
   if (!risk) return { type: "FeatureCollection", features: [] };
   return {
@@ -86,18 +95,26 @@ function riskGeoJSON(risk: RiskData | undefined): GeoJSON.FeatureCollection {
     features: risk.wilayas.map((w) => ({
       type: "Feature",
       geometry: { type: "Point", coordinates: [w.lng, w.lat] },
-      properties: { name: w.name, fwi: w.fwi, class: w.class, temp: w.temp, rh: w.rh, wind: w.wind, forecast: JSON.stringify(w.forecast ?? []) },
+      properties: { code: w.code, name: w.name, fwi: w.fwi, class: w.class, temp: w.temp, rh: w.rh, wind: w.wind, forecast: JSON.stringify(w.forecast ?? []) },
     })),
   };
 }
 
 export default function FireMap({ data, selected, onSelect, styleKey, isMobile, focus, riskData, showRisk }: Props) {
+  const t = useTranslations();
+  const { locale } = useLocale();
   const isMobileRef = useRef(isMobile);
   isMobileRef.current = isMobile;
   const riskDataRef = useRef(riskData);
   const showRiskRef = useRef(showRisk);
   riskDataRef.current = riskData;
   showRiskRef.current = showRisk;
+  // The map click handler is bound once; read the latest translator/locale
+  // through refs so popups always render in the current language.
+  const tRef = useRef<Translator>(t);
+  const localeRef = useRef<Locale>(locale);
+  tRef.current = t;
+  localeRef.current = locale;
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<maplibregl.Map | null>(null);
   const readyRef = useRef(false);
@@ -141,7 +158,7 @@ export default function FireMap({ data, selected, onSelect, styleKey, isMobile, 
       type: "symbol",
       source: WILAYA_SRC,
       layout: {
-        "text-field": ["get", "name"],
+        "text-field": wilayaTextField(localeRef.current),
         "text-font": ["Noto Sans Regular"],
         "text-size": ["interpolate", ["linear"], ["zoom"], 5, 9.5, 9, 13],
         "text-transform": "uppercase",
@@ -287,35 +304,39 @@ export default function FireMap({ data, selected, onSelect, styleKey, isMobile, 
     map.on("click", RISK_LAYER, (e) => {
       const f = e.features?.[0];
       if (!f) return;
-      const p = f.properties as { name: string; fwi: number; class: string; temp: number; rh: number; wind: number; forecast?: string };
+      const p = f.properties as { code: number; name: string; fwi: number; class: string; temp: number; rh: number; wind: number; forecast?: string };
       const [lng, lat] = (f.geometry as GeoJSON.Point).coordinates as [number, number];
+      const t = tRef.current;
+      const loc = localeRef.current;
+      const dir = dirFor(loc);
+      const name = wilayaName(p.code, loc) || p.name;
       let forecast: { fwi: number; class: string }[] = [];
       try {
         forecast = p.forecast ? JSON.parse(p.forecast) : [];
       } catch {
         forecast = [];
       }
-      const labels = ["Today", "Tomorrow", "In 2 days"];
+      const labels = [t("mapPopup.today"), t("mapPopup.tomorrow"), t("mapPopup.in2Days")];
       const outlook = forecast.length
         ? `<div style="margin-top:9px;padding-top:8px;border-top:1px solid #eee">
-             <div style="color:#777;font-size:10.5px;text-transform:uppercase;letter-spacing:.04em;margin-bottom:4px">3-day outlook</div>
+             <div style="color:#777;font-size:10.5px;text-transform:uppercase;letter-spacing:.04em;margin-bottom:4px">${t("mapPopup.outlook")}</div>
              ${forecast
                .map(
                  (d, i) =>
-                   `<div style="display:flex;justify-content:space-between;gap:12px;padding:2px 0;font-size:12px"><span style="color:#666">${labels[i] ?? ""}</span><span style="font-weight:600;color:${riskColor(d.class)}">${riskLabel(d.class)} · ${d.fwi}</span></div>`
+                   `<div style="display:flex;justify-content:space-between;gap:12px;padding:2px 0;font-size:12px"><span style="color:#666">${labels[i] ?? ""}</span><span style="font-weight:600;color:${riskColor(d.class)}">${riskLabel(d.class, t)} · ${d.fwi}</span></div>`
                )
                .join("")}
            </div>`
         : "";
       const html = `
-        <div style="font:13px system-ui,sans-serif;min-width:186px;color:#111">
-          <div style="font-weight:700;font-size:14px">${p.name}</div>
-          <div style="color:#777;font-size:11px;margin-bottom:8px">Fire-weather risk (FWI)</div>
+        <div dir="${dir}" style="font:13px system-ui,sans-serif;min-width:186px;color:#111;text-align:start">
+          <div style="font-weight:700;font-size:14px">${name}</div>
+          <div style="color:#777;font-size:11px;margin-bottom:8px">${t("mapPopup.fireWeatherRiskFwi")}</div>
           <div style="display:flex;align-items:baseline;gap:7px">
             <span style="font-size:26px;font-weight:800">${p.fwi}</span>
-            <span style="font-weight:700;color:${riskColor(p.class)}">${riskLabel(p.class)}</span>
+            <span style="font-weight:700;color:${riskColor(p.class)}">${riskLabel(p.class, t)}</span>
           </div>
-          <div style="color:#666;font-size:12px;margin-top:7px">${p.temp}°C · ${p.rh}% RH · ${p.wind} km/h wind</div>
+          <div style="color:#666;font-size:12px;margin-top:7px">${p.temp}°C · ${p.rh}% ${t("mapPopup.rh")} · ${p.wind} km/h ${t("mapPopup.wind")}</div>
           ${outlook}
         </div>`;
       new maplibregl.Popup({ closeButton: true, maxWidth: "240px" }).setLngLat([lng, lat]).setHTML(html).addTo(map);
@@ -367,6 +388,13 @@ export default function FireMap({ data, selected, onSelect, styleKey, isMobile, 
     if (!map || !readyRef.current) return;
     if (map.getLayer(RISK_LAYER)) map.setLayoutProperty(RISK_LAYER, "visibility", showRisk ? "visible" : "none");
   }, [showRisk]);
+
+  // Re-label wilayas when the locale changes (Arabic ⇄ Latin).
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !readyRef.current) return;
+    if (map.getLayer(WILAYA_LAYER)) map.setLayoutProperty(WILAYA_LAYER, "text-field", wilayaTextField(locale));
+  }, [locale]);
 
   // Fly to a requested focus target (wilaya / search). `nonce` forces re-fire.
   useEffect(() => {

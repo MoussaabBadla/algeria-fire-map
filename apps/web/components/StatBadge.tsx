@@ -1,7 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { CONFIRMED_EXPLAINER, DETECTION_EXPLAINER } from "@/lib/fire";
+import { useTranslations } from "@/lib/i18n/LocaleProvider";
+import type { Translator } from "@/lib/i18n/config";
 
 interface Props {
   shownCount: number;
@@ -12,16 +13,17 @@ interface Props {
   compact?: boolean;
 }
 
-function lastUpdated(iso: string | undefined): string {
+function lastUpdated(iso: string | undefined, t: Translator): string {
   if (!iso) return "—";
   const mins = Math.round((Date.now() - new Date(iso).getTime()) / 60000);
-  if (mins < 1) return "just now";
-  if (mins < 60) return `${mins} min ago`;
-  return `${Math.round(mins / 60)} h ago`;
+  if (mins < 1) return t("time.justNow");
+  if (mins < 60) return t("time.minAgo", { n: mins });
+  return t("time.hAgo", { n: Math.round(mins / 60) });
 }
 
 export default function StatBadge({ shownCount, totalCount, generatedAt, loading, error, compact }: Props) {
   const [showInfo, setShowInfo] = useState(false);
+  const t = useTranslations();
 
   if (error) return <div style={{ color: "var(--fire-4)", fontSize: 13 }}>{error}</div>;
 
@@ -32,11 +34,11 @@ export default function StatBadge({ shownCount, totalCount, generatedAt, loading
           {shownCount.toLocaleString()}
         </span>
         <span style={{ fontSize: 12.5, color: "var(--text-secondary)", display: "inline-flex", alignItems: "center", gap: 6 }}>
-          active fires
+          {t("statBadge.activeFires")}
           {/* Subtle info affordance → methodology popover */}
           <span style={{ position: "relative", display: "inline-flex" }}>
             <button
-              aria-label="How fires are confirmed"
+              aria-label={t("statBadge.howDetectedAria")}
               onMouseEnter={() => setShowInfo(true)}
               onMouseLeave={() => setShowInfo(false)}
               onClick={() => setShowInfo((v) => !v)}
@@ -49,14 +51,14 @@ export default function StatBadge({ shownCount, totalCount, generatedAt, loading
                 style={
                   compact
                     ? // Mobile: span the viewport width so it never overflows.
-                      { position: "fixed", left: 12, right: 12, top: "calc(env(safe-area-inset-top) + 82px)", zIndex: 40, padding: 14, borderRadius: 14, background: "var(--surface-solid)", border: "1px solid var(--border-strong)", boxShadow: "var(--shadow)", fontSize: 12.5, lineHeight: 1.55, color: "var(--text-secondary)", fontWeight: 400, textAlign: "left" }
-                    : { position: "absolute", top: "calc(100% + 8px)", left: 0, width: 290, zIndex: 40, padding: 14, borderRadius: 12, background: "var(--surface-solid)", border: "1px solid var(--border-strong)", boxShadow: "var(--shadow)", fontSize: 12, lineHeight: 1.55, color: "var(--text-secondary)", fontWeight: 400, textAlign: "left" }
+                      { position: "fixed", insetInlineStart: 12, insetInlineEnd: 12, top: "calc(env(safe-area-inset-top) + 82px)", zIndex: 40, padding: 14, borderRadius: 14, background: "var(--surface-solid)", border: "1px solid var(--border-strong)", boxShadow: "var(--shadow)", fontSize: 12.5, lineHeight: 1.55, color: "var(--text-secondary)", fontWeight: 400, textAlign: "start" }
+                    : { position: "absolute", top: "calc(100% + 8px)", insetInlineStart: 0, width: 290, zIndex: 40, padding: 14, borderRadius: 12, background: "var(--surface-solid)", border: "1px solid var(--border-strong)", boxShadow: "var(--shadow)", fontSize: 12, lineHeight: 1.55, color: "var(--text-secondary)", fontWeight: 400, textAlign: "start" }
                 }
               >
-                <div style={{ fontWeight: 700, color: "var(--text)", marginBottom: 5 }}>How fires are detected</div>
-                <div style={{ marginBottom: 10 }}>{DETECTION_EXPLAINER}</div>
-                <div style={{ fontWeight: 700, color: "var(--text)", marginBottom: 5 }}>How we confirm them</div>
-                {CONFIRMED_EXPLAINER}
+                <div style={{ fontWeight: 700, color: "var(--text)", marginBottom: 5 }}>{t("statBadge.howDetectedTitle")}</div>
+                <div style={{ marginBottom: 10 }}>{t("explainers.detection")}</div>
+                <div style={{ fontWeight: 700, color: "var(--text)", marginBottom: 5 }}>{t("statBadge.howConfirmedTitle")}</div>
+                {t("explainers.confirmed")}
               </div>
             )}
           </span>
@@ -65,7 +67,7 @@ export default function StatBadge({ shownCount, totalCount, generatedAt, loading
 
       {!compact && (
         <div style={{ fontSize: 11.5, color: "var(--text-muted)", marginTop: 8 }}>
-          of {totalCount.toLocaleString()} hotspots · updated {lastUpdated(generatedAt)}
+          {t("statBadge.ofHotspotsUpdated", { total: totalCount.toLocaleString(), time: lastUpdated(generatedAt, t) })}
         </div>
       )}
     </div>

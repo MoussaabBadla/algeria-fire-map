@@ -1,0 +1,133 @@
+{
+  "common": {
+    "appName": "Algeria Fire Map",
+    "tagline": "Live wildfire monitoring",
+    "openSource": "Open source",
+    "by": "by {name}",
+    "mapAttribution": "Map © OpenStreetMap · Esri · Fires: NASA FIRMS",
+    "close": "Close",
+    "loadingMap": "Loading map…",
+    "unknown": "Unknown"
+  },
+  "topBar": {
+    "map": "Map",
+    "period": "Period",
+    "latest": "Latest",
+    "topRisk": "Top risk",
+    "affected": "Affected",
+    "risk": "Risk",
+    "replay": "Replay",
+    "replayLast5Days": "Replay last 5 days",
+    "fireRiskFwi": "Fire risk (FWI)",
+    "on": "on",
+    "live": "LIVE",
+    "replayBadge": "REPLAY"
+  },
+  "legend": {
+    "firePowerMw": "Fire power (MW)",
+    "hint": "Glow shows density; zoom in for individual detections."
+  },
+  "riskLegend": {
+    "fireWeatherRisk": "Fire-weather risk",
+    "lowToExtreme": "Low to Extreme",
+    "whatIsFwiAria": "What is the Fire Weather Index?",
+    "whatIsFwiTitle": "What is fire risk (FWI)?",
+    "tapWilaya": "Tap a wilaya for details."
+  },
+  "riskPanel": {
+    "highestFireRisk": "Highest fire-risk"
+  },
+  "wilayaRanking": {
+    "mostAffected": "Most affected wilayas"
+  },
+  "time": {
+    "justNow": "just now",
+    "minAgo": "{n} min ago",
+    "hAgo": "{n} h ago",
+    "dAgo": "{n} d ago",
+    "unknown": "unknown time"
+  },
+  "statBadge": {
+    "activeFires": "active fires",
+    "ofHotspotsUpdated": "of {total} hotspots · updated {time}",
+    "howDetectedAria": "How fires are confirmed",
+    "howDetectedTitle": "How fires are detected",
+    "howConfirmedTitle": "How we confirm them"
+  },
+  "fireDetail": {
+    "intensitySuffix": "{level} intensity",
+    "activeFireDetection": "Active fire detection",
+    "location": "Location",
+    "locating": "Locating…",
+    "wilayaOf": "Wilaya of {name}",
+    "remoteArea": "Remote area",
+    "fireRadiativePower": "Fire radiative power",
+    "confidence": "Confidence",
+    "detected": "Detected",
+    "satellite": "Satellite",
+    "timeOfDay": "Time of day",
+    "brightness": "Brightness",
+    "coordinates": "Coordinates",
+    "sourceNote": "Source: NASA FIRMS (VIIRS / MODIS). Near-real-time — detections can lag ~3 h and may be obscured by cloud."
+  },
+  "latestFires": {
+    "title": "Latest fires"
+  },
+  "timeline": {
+    "goLive": "Go live",
+    "dragOrPlay": "Drag or play to replay the last 5 days",
+    "now": "now",
+    "fires": "{n} fires",
+    "play": "Play",
+    "pause": "Pause"
+  },
+  "intensity": {
+    "low": "Low",
+    "moderate": "Moderate",
+    "high": "High",
+    "very-high": "Very high",
+    "extreme": "Extreme"
+  },
+  "riskClass": {
+    "very-low": "Very low",
+    "low": "Low",
+    "moderate": "Moderate",
+    "high": "High",
+    "very-high": "Very high",
+    "extreme": "Extreme"
+  },
+  "confidence": {
+    "low": "Low",
+    "nominal": "Nominal",
+    "high": "High"
+  },
+  "dayNight": {
+    "D": "Daytime",
+    "N": "Nighttime",
+    "unknown": "—"
+  },
+  "duration": {
+    "live": "Live",
+    "24h": "24h",
+    "48h": "48h"
+  },
+  "mapStyle": {
+    "dark": "Dark",
+    "satellite": "Satellite",
+    "light": "Light"
+  },
+  "explainers": {
+    "detection": "Fires are detected from space by NASA FIRMS. Polar-orbiting satellites — VIIRS on NOAA-20/21 & Suomi-NPP, and MODIS on Terra/Aqua — scan Algeria several times a day, flag thermal hotspots and measure each fire's radiative power (heat output in MW). Data arrives near-real-time, about 3 h after the satellite passes.",
+    "confirmed": "We then show only Confirmed fires: detections flagged high-confidence with a fire radiative power of 15 MW or more. This filters out low-confidence noise and small agricultural burns, leaving what is almost certainly a real, active wildfire.",
+    "fwi": "The Fire Weather Index (FWI) rates how easily a wildfire could start and spread today — from the weather alone: heat, dryness, wind, and how long since it last rained. Higher means more dangerous conditions. It's the standard used by fire services and the EU (EFFIS). Note: it shows the risk, not that a fire is already burning."
+  },
+  "mapPopup": {
+    "today": "Today",
+    "tomorrow": "Tomorrow",
+    "in2Days": "In 2 days",
+    "outlook": "3-day outlook",
+    "fireWeatherRiskFwi": "Fire-weather risk (FWI)",
+    "rh": "RH",
+    "wind": "wind"
+  }
+}

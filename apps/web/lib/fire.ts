@@ -1,20 +1,22 @@
 // Domain helpers for interpreting FIRMS fire detections.
 import type { Confidence, FireProperties } from "./api";
+import type { Translator } from "./i18n/config";
+
+export type IntensityKey = "low" | "moderate" | "high" | "very-high" | "extreme";
 
 export interface IntensityLevel {
-  key: "low" | "moderate" | "high" | "very-high" | "extreme";
-  label: string;
+  key: IntensityKey; // display label comes from t(`intensity.${key}`)
   color: string;
   min: number; // FRP MW lower bound
 }
 
 // Sequential fire-power ramp (must match --fire-* in globals.css and the map layer).
 export const INTENSITY_LEVELS: IntensityLevel[] = [
-  { key: "low", label: "Low", color: "#ffe066", min: 0 },
-  { key: "moderate", label: "Moderate", color: "#ffa630", min: 5 },
-  { key: "high", label: "High", color: "#fb5607", min: 20 },
-  { key: "very-high", label: "Very high", color: "#e01e37", min: 50 },
-  { key: "extreme", label: "Extreme", color: "#a4133c", min: 100 },
+  { key: "low", color: "#ffe066", min: 0 },
+  { key: "moderate", color: "#ffa630", min: 5 },
+  { key: "high", color: "#fb5607", min: 20 },
+  { key: "very-high", color: "#e01e37", min: 50 },
+  { key: "extreme", color: "#a4133c", min: 100 },
 ];
 
 export function intensityForFrp(frp: number): IntensityLevel {
@@ -29,18 +31,6 @@ export function intensityForFrp(frp: number): IntensityLevel {
 // real, significant fires.
 export type FireFilterKey = "confirmed" | "notable" | "all";
 
-export interface FireFilterDef {
-  key: FireFilterKey;
-  label: string;
-  description: string;
-}
-
-export const FIRE_FILTERS: FireFilterDef[] = [
-  { key: "confirmed", label: "Confirmed", description: "High confidence · strong intensity — real wildfires" },
-  { key: "notable", label: "Notable", description: "Nominal+ confidence · ≥8 MW" },
-  { key: "all", label: "All", description: "Every satellite hotspot" },
-];
-
 export function passesFilter(p: { confidence: Confidence; frp: number }, key: FireFilterKey): boolean {
   if (key === "all") return true;
   if (key === "notable") return p.confidence !== "low" && p.frp >= 8;
@@ -48,27 +38,19 @@ export function passesFilter(p: { confidence: Confidence; frp: number }, key: Fi
   return p.confidence === "high" && p.frp >= 15;
 }
 
-// Human-readable explanation shown in the info popover.
-export const DETECTION_EXPLAINER =
-  "Fires are detected from space by NASA FIRMS. Polar-orbiting satellites — VIIRS on NOAA-20/21 & Suomi-NPP, and MODIS on Terra/Aqua — scan Algeria several times a day, flag thermal hotspots and measure each fire's radiative power (heat output in MW). Data arrives near-real-time, about 3 h after the satellite passes.";
-
-export const CONFIRMED_EXPLAINER =
-  "We then show only Confirmed fires: detections flagged high-confidence with a fire radiative power of 15 MW or more. This filters out low-confidence noise and small agricultural burns, leaving what is almost certainly a real, active wildfire.";
-
 // ---- Timing / recency ----
 export type DurationKey = "live" | "24h" | "48h";
 
 export interface DurationDef {
-  key: DurationKey;
-  label: string;
+  key: DurationKey; // display label comes from t(`duration.${key}`)
   apiDays: number; // days to request from the API
   maxAgeHours: number; // client-side recency cutoff
 }
 
 export const DURATIONS: DurationDef[] = [
-  { key: "live", label: "Live", apiDays: 1, maxAgeHours: 6 },
-  { key: "24h", label: "24h", apiDays: 1, maxAgeHours: 24 },
-  { key: "48h", label: "48h", apiDays: 2, maxAgeHours: 48 },
+  { key: "live", apiDays: 1, maxAgeHours: 6 },
+  { key: "24h", apiDays: 1, maxAgeHours: 24 },
+  { key: "48h", apiDays: 2, maxAgeHours: 48 },
 ];
 
 export function durationFor(key: DurationKey): DurationDef {
@@ -80,14 +62,16 @@ export function withinAge(iso: string | null, maxAgeHours: number): boolean {
   return Date.now() - new Date(iso).getTime() <= maxAgeHours * 3600_000;
 }
 
-const CONFIDENCE_META: Record<Confidence, { label: string; color: string }> = {
-  low: { label: "Low", color: "#a4a7b2" },
-  nominal: { label: "Nominal", color: "#ffa630" },
-  high: { label: "High", color: "#34d399" },
+// Colors only; the label comes from t(`confidence.${key}`).
+const CONFIDENCE_COLOR: Record<Confidence, string> = {
+  low: "#a4a7b2",
+  nominal: "#ffa630",
+  high: "#34d399",
 };
 
-export function confidenceMeta(c: Confidence) {
-  return CONFIDENCE_META[c] ?? CONFIDENCE_META.nominal;
+export function confidenceMeta(c: Confidence): { key: Confidence; color: string } {
+  const key = c in CONFIDENCE_COLOR ? c : "nominal";
+  return { key, color: CONFIDENCE_COLOR[key] };
 }
 
 // FIRMS satellite codes → friendly names.
@@ -108,9 +92,11 @@ export function satelliteName(p: Pick<FireProperties, "satellite" | "instrument"
   return `${sat} · ${instr}`;
 }
 
-// Absolute time in Algeria (Africa/Algiers, UTC+1).
+// Absolute time in Algeria (Africa/Algiers, UTC+1). Kept in Latin digits
+// (en-GB) to match the tabular-nums figures used across the UI; the locale
+// only controls surrounding copy, not the numerals.
 export function formatAlgeriaTime(iso: string | null): string {
-  if (!iso) return "Unknown";
+  if (!iso) return "—";
   try {
     return new Intl.DateTimeFormat("en-GB", {
       timeZone: "Africa/Algiers",
@@ -121,22 +107,24 @@ export function formatAlgeriaTime(iso: string | null): string {
       hour12: false,
     }).format(new Date(iso));
   } catch {
-    return "Unknown";
+    return "—";
   }
 }
 
-export function relativeTime(iso: string | null): string {
-  if (!iso) return "unknown time";
+// Localized relative time. Pass the translator (keys under `time.*`).
+export function relativeTime(iso: string | null, t: Translator): string {
+  if (!iso) return t("time.unknown");
   const diffMin = Math.round((Date.now() - new Date(iso).getTime()) / 60000);
-  if (diffMin < 1) return "just now";
-  if (diffMin < 60) return `${diffMin} min ago`;
+  if (diffMin < 1) return t("time.justNow");
+  if (diffMin < 60) return t("time.minAgo", { n: diffMin });
   const h = Math.round(diffMin / 60);
-  if (h < 48) return `${h} h ago`;
-  return `${Math.round(h / 24)} d ago`;
+  if (h < 48) return t("time.hAgo", { n: h });
+  return t("time.dAgo", { n: Math.round(h / 24) });
 }
 
-export function dayNightLabel(d: string): string {
-  return d === "D" ? "Daytime" : d === "N" ? "Nighttime" : "—";
+// Normalizes the FIRMS day/night flag to a message key: t(`dayNight.${key}`).
+export function dayNightKey(d: string): "D" | "N" | "unknown" {
+  return d === "D" ? "D" : d === "N" ? "N" : "unknown";
 }
 
 // Great-circle distance in km.
