@@ -205,6 +205,8 @@ async def run_backfill(start: date, end: date, sources, summer_only: bool,
     if recluster_after:
         log.info("re-clustering after backfill…")
         result["events"] = await recluster()
+    from .stats import refresh_stats
+    result["stats_rows"] = await refresh_stats()
     log.info("backfill complete: %s", result)
     return result
 

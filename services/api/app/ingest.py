@@ -12,6 +12,7 @@ from .cluster import recluster
 from .config import get_settings
 from .db import get_pool, upsert_detections
 from .firms import fetch_fires_geojson
+from .stats import refresh_stats
 
 log = logging.getLogger("ingest")
 
@@ -31,6 +32,7 @@ async def ingest_once() -> dict:
     features = fc.get("features", [])
     upserted = await upsert_detections(features)
     events = await recluster()
+    await refresh_stats()
     log.info("ingest: fetched=%d upserted=%d active_events=%d", len(features), upserted, events.get("active", 0))
     return {"ok": True, "fetched": len(features), "upserted": upserted, **events}
 

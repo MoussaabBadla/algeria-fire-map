@@ -15,7 +15,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from .config import get_settings
 from .db import close_pool, db_healthy
 from .ingest import ingest_once, shutdown_scheduler, start_scheduler
-from .routers import events, fires, place, risk
+from .routers import events, fires, place, risk, stats
 
 logging.basicConfig(level=logging.INFO)
 settings = get_settings()
@@ -51,6 +51,7 @@ app.include_router(fires.router, tags=["fires"])
 app.include_router(place.router, tags=["place"])
 app.include_router(risk.router, tags=["risk"])
 app.include_router(events.router, tags=["events"])
+app.include_router(stats.router, tags=["stats"])
 
 
 @app.get("/health", tags=["meta"])
