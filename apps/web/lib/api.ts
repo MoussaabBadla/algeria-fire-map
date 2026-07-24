@@ -88,6 +88,7 @@ export interface EventProperties {
   max_frp: number | null;
   total_frp: number | null;
   is_active: boolean;
+  confirmed: boolean;
   wilaya_code: number | null;
   wilaya_name: string | null;
   wilaya_name_ar: string | null;
