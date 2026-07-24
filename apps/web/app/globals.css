@@ -43,19 +43,25 @@
 
 html,
 body {
-  height: 100%;
   margin: 0;
   padding: 0;
 }
 
+html {
+  height: 100%;
+}
+
 body {
+  min-height: 100%;
   background: var(--bg);
   color: var(--text);
   font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI",
     var(--font-geist-sans), system-ui, sans-serif;
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
-  overflow: hidden;
+  /* Vertical scrolling must work on content pages (e.g. /stats). The map is
+     position:fixed, so it stays full-screen regardless; only block horizontal. */
+  overflow-x: hidden;
 }
 
 /* Arabic (and any RTL locale): prefer the Arabic webfont, keep Latin fallbacks. */
