@@ -125,7 +125,12 @@ async def _fetch_source(client: httpx.AsyncClient, map_key: str, source: str, da
     try:
         resp = await client.get(url, timeout=30.0)
         resp.raise_for_status()
-        return _parse_csv(resp.text)
+        feats = _parse_csv(resp.text)
+        # Tag each feature with the FIRMS product it came from (persisted as
+        # `source`; used by the DB layer and to distinguish NRT vs SP archive).
+        for f in feats:
+            f["properties"]["source"] = source
+        return feats
     except (httpx.HTTPError, httpx.TimeoutException):
         # A single failing source is skipped, not fatal.
         return []
