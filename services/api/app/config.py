@@ -21,6 +21,33 @@ class Settings(BaseSettings):
     # --- Redis (optional). If unset, an in-memory cache is used (fine for local dev). ---
     redis_url: str = ""
 
+    # --- Postgres/PostGIS (Supabase). If unset, persistence features are disabled
+    # and the API runs in stateless passthrough mode (current behaviour). ---
+    database_url: str = ""
+
+    # --- Admin ---
+    # Shared secret guarding POST /admin/* (manual ingest, etc.). Required when
+    # ingest is enabled in production.
+    admin_token: str = ""
+
+    # --- Ingestion scheduler ---
+    # Enable the in-process APScheduler ingest loop (set true on the Railway service).
+    ingest_enabled: bool = False
+    # How often to pull FIRMS and upsert detections (seconds).
+    ingest_interval_seconds: int = 900  # 15 min
+    # Day-range to pull each ingest cycle (FIRMS NRT caps at 5).
+    ingest_days: int = 3
+    # A detection is part of an "active" incident if seen within this many hours.
+    event_active_hours: int = 24
+
+    # --- Clustering (ST-DBSCAN-ish) ---
+    # Spatial radius for grouping detections into one incident (degrees; ~0.03° ≈ 3 km).
+    cluster_eps_deg: float = 0.03
+    cluster_min_points: int = 1
+    # Only detections within this rolling window drive clustering, so a location
+    # that reignites after a quiet gap becomes a NEW incident (the temporal split).
+    cluster_link_days: int = 4
+
     # --- Fires endpoint cache TTL (seconds). FIRMS NRT updates only a few times/day. ---
     fires_cache_ttl: int = 600
 
