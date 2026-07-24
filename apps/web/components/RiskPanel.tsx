@@ -4,7 +4,9 @@ import type { RiskWilaya } from "@/lib/api";
 import { riskColor, riskLabel } from "@/lib/risk";
 import { useLocale, useTranslations } from "@/lib/i18n/LocaleProvider";
 import { wilayaName } from "@/lib/i18n/wilayaNames";
-import { CloseIcon } from "./Icons";
+import { getFollowed, toggleFollow, isFollowed } from "@/lib/followedWilayas";
+import { useState } from "react";
+import { CloseIcon, BellIcon, BellFilledIcon } from "./Icons";
 
 interface Props {
   items: RiskWilaya[];
@@ -14,6 +16,7 @@ interface Props {
 }
 
 export default function RiskPanel({ items, onSelect, isMobile, onClose }: Props) {
+  const [, forceUpdate] = useState(0);
   const t = useTranslations();
   const { locale } = useLocale();
   if (!items.length) return null;
@@ -35,11 +38,31 @@ export default function RiskPanel({ items, onSelect, isMobile, onClose }: Props)
         )}
       </div>
       {items.slice(0, 6).map((w) => (
-        <button
-          key={w.code}
-          onClick={() => onSelect(w)}
-          style={{ display: "flex", width: "100%", alignItems: "center", justifyContent: "space-between", gap: 10, background: "none", border: "none", cursor: "pointer", padding: "7px 0" }}
-        >
+        <div style={{ display: "flex", alignItems: "center", gap: 4 }} key={w.code}>
+          <button
+            onClick={(e) => { e.stopPropagation(); toggleFollow(w.code); forceUpdate(n => n + 1); }}
+            aria-label={isFollowed(w.code) ? "Unfollow" : "Follow"}
+            style={{
+              background: "none",
+              border: "none",
+              cursor: "pointer",
+              padding: 0,
+              color: isFollowed(w.code) ? "var(--accent)" : "var(--text-muted)",
+              display: "flex",
+              flexShrink: 0,
+              opacity: isFollowed(w.code) ? 1 : 0.5,
+              width: 20,
+              height: 20,
+              alignItems: "center",
+              justifyContent: "center",
+            }}
+          >
+            {isFollowed(w.code) ? <BellFilledIcon size={14} /> : <BellIcon size={14} />}
+          </button>
+          <button
+            onClick={() => onSelect(w)}
+            style={{ display: "flex", width: "100%", alignItems: "center", justifyContent: "space-between", gap: 10, background: "none", border: "none", cursor: "pointer", padding: "7px 0" }}
+          >
           <span style={{ display: "flex", alignItems: "center", gap: 9, minWidth: 0 }}>
             <span style={{ width: 9, height: 9, borderRadius: "50%", background: riskColor(w.class), flexShrink: 0 }} />
             <span style={{ fontSize: 13, color: "var(--text)", fontWeight: 500, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{wilayaName(w.code, locale) || w.name}</span>
@@ -49,6 +72,7 @@ export default function RiskPanel({ items, onSelect, isMobile, onClose }: Props)
             <span style={{ fontSize: 12.5, color: "var(--text-secondary)", fontVariantNumeric: "tabular-nums" }}>{w.fwi}</span>
           </span>
         </button>
+        </div>
       ))}
     </div>
   );

@@ -5,10 +5,10 @@ import dynamic from "next/dynamic";
 import useSWR from "swr";
 import { fetchFires, fetchRisk, firesKey, riskKey, type FireCollection, type FireFeature, type RiskData, type RiskWilaya, type SelectedFire } from "@/lib/api";
 import { durationFor, passesFilter, withinAge, type DurationKey } from "@/lib/fire";
-import { rankWilayas, type WilayaCount } from "@/lib/wilayaAssign";
+import { rankWilayas, nearestWilayaCode, WILAYAS, type WilayaCount } from "@/lib/wilayaAssign";
 import type { MapStyleKey } from "@/lib/mapStyles";
 import { useIsMobile } from "@/lib/useIsMobile";
-import { useTranslations } from "@/lib/i18n/LocaleProvider";
+import { useLocale, useTranslations } from "@/lib/i18n/LocaleProvider";
 import TopBar from "./TopBar";
 import Legend from "./Legend";
 import FireDetailPanel from "./FireDetailPanel";
@@ -17,6 +17,9 @@ import TimelineScrubber from "./TimelineScrubber";
 import RiskLegend from "./RiskLegend";
 import RiskPanel from "./RiskPanel";
 import LatestFires from "./LatestFires";
+import AlertToast, { type WilayaAlert } from "./AlertToast";
+import { getFollowed } from "@/lib/followedWilayas";
+import { wilayaName } from "@/lib/i18n/wilayaNames";
 
 function MapLoading() {
   const t = useTranslations();
@@ -58,7 +61,7 @@ export default function FireDashboard() {
 
   const dur = durationFor(duration);
 
-  const { data: liveData, error, isLoading } = useSWR<FireCollection>(firesKey(dur.apiDays), fetchFires, {
+  const { data: liveData, error, isLoading, mutate: retry } = useSWR<FireCollection>(firesKey(dur.apiDays), fetchFires, {
     refreshInterval: 5 * 60 * 1000,
     revalidateOnFocus: false,
     keepPreviousData: true,
@@ -139,6 +142,50 @@ export default function FireDashboard() {
   }, [historyMode, historyData, historyConfirmed, cursor, liveData, dur.maxAgeHours, duration]);
 
   const ranking = useMemo(() => rankWilayas(displayed?.features ?? []), [displayed]);
+
+  // Alert system: detect new fires in followed wilayas
+  const prevFeaturesRef = useRef<string[]>([]);
+  const [alerts, setAlerts] = useState<WilayaAlert[]>([]);
+  const { locale } = useLocale();
+
+  useEffect(() => {
+    const features = displayed?.features ?? [];
+    const currentIds = features.map((_, i) => `${features[i].geometry.coordinates[0]}_${features[i].geometry.coordinates[1]}_${features[i].properties.frp}`);
+    const prevIds = prevFeaturesRef.current;
+    if (prevIds.length > 0) {
+      const newIds = currentIds.filter((id) => !prevIds.includes(id));
+      if (newIds.length > 0) {
+        const followed = getFollowed();
+        if (followed.length > 0) {
+          const newFeatures = features.filter((_, i) => newIds.includes(`${features[i].geometry.coordinates[0]}_${features[i].geometry.coordinates[1]}_${features[i].properties.frp}`));
+          const alertMap = new Map<number, number[]>();
+          for (const f of newFeatures) {
+            const [lng, lat] = f.geometry.coordinates;
+            const code = nearestWilayaCode(lng, lat);
+            if (followed.includes(code)) {
+              const arr = alertMap.get(code) || [];
+              arr.push(f.properties.frp);
+              alertMap.set(code, arr);
+            }
+          }
+          if (alertMap.size > 0) {
+            setAlerts(Array.from(alertMap.entries()).map(([wilayaCode, frps]) => ({ wilayaCode, frps })));
+            // Request notification permission
+            if ("Notification" in window && Notification.permission === "default") {
+              Notification.requestPermission();
+            }
+            // Also fire system notification if permitted
+            if ("Notification" in window && Notification.permission === "granted") {
+              const names = Array.from(alertMap.keys()).map((code) => wilayaName(code, locale)).filter(Boolean).join(" + ");
+              const total = Array.from(alertMap.values()).reduce((a, b) => a + b.length, 0);
+              new Notification(`\ud83d\udd25 ${total} new fire(s) in ${names}`);
+            }
+          }
+        }
+      }
+    }
+    prevFeaturesRef.current = currentIds;
+  }, [displayed, locale]);
 
   // 3 most recent detections (newest first).
   const latest = useMemo<FireFeature[]>(() => {
@@ -281,6 +328,54 @@ export default function FireDashboard() {
       )}
 
       {selected && <FireDetailPanel fire={selected} onClose={() => setSelected(null)} isMobile={isMobile} />}
+
+      <AlertToast
+        alerts={alerts}
+        locale={locale}
+        onView={(code: number) => {
+          const feats = displayed?.features ?? [];
+          let found = false;
+          for (const f of feats) {
+            const [lng, lat] = f.geometry.coordinates;
+            if (nearestWilayaCode(lng, lat) === code) {
+              flyTo(lng, lat, 8.2);
+              found = true;
+              break;
+            }
+          }
+          if (!found) {
+            const w = WILAYAS.find((w) => w.code === code);
+            if (w) flyTo(w.lng, w.lat, 8.2);
+          }
+        }}
+        onDismiss={() => setAlerts([])}
+      />
+
+      {process.env.NODE_ENV === "development" && (
+        <button
+          onClick={() => {
+            const followed = getFollowed();
+            if (followed.length === 0) {
+              alert("Follow a wilaya first (click the bell icon in search results)");
+              return;
+            }
+            setAlerts(
+              followed.slice(0, 3).map((code) => ({
+                wilayaCode: code,
+                frps: [15 + Math.random() * 80, 8 + Math.random() * 40].filter(() => Math.random() > 0.3),
+              }))
+            );
+          }}
+          style={{
+            position: "fixed", top: 16, insetInlineEnd: 70, zIndex: 9999,
+            fontSize: 9, padding: "3px 8px", borderRadius: 6,
+            border: "1px solid rgba(255,122,26,0.3)", background: "rgba(255,122,26,0.08)",
+            color: "var(--accent)", cursor: "pointer", opacity: 0.5,
+          }}
+        >
+          DEV · Test Alert
+        </button>
+      )}
     </main>
   );
 }
