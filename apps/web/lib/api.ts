@@ -122,6 +122,43 @@ export async function fetchEvents(url: string): Promise<EventCollection> {
   return res.json();
 }
 
+// --- National statistics (/stats) ---
+export interface StatsWilaya {
+  code: number;
+  name: string;
+  name_ar: string;
+  detections: number;
+  confirmed: number;
+}
+
+export interface StatsData {
+  enabled: boolean;
+  kpis: {
+    total_detections: number;
+    total_confirmed: number;
+    wilayas_affected: number;
+    total_frp: number;
+    active_incidents: number;
+    this_year: number;
+  };
+  coverage: { first_date: string | null; last_date: string | null; current_year: number | null };
+  by_year: { year: number; detections: number; confirmed: number; frp: number }[];
+  by_month: { month: number; detections: number; confirmed: number }[];
+  top_wilayas_all: StatsWilaya[];
+  top_wilayas_year: StatsWilaya[];
+  frp_buckets: number[]; // [<5, 5-20, 20-50, 50-100, 100+]
+}
+
+export function statsKey(): string {
+  return `${API_URL}/stats`;
+}
+
+export async function fetchStats(url: string): Promise<StatsData> {
+  const res = await fetch(url);
+  if (!res.ok) throw new Error("stats fetch failed");
+  return res.json();
+}
+
 export interface RiskDay {
   fwi: number;
   class: string;

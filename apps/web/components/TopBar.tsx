@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { DURATIONS, type DurationKey } from "@/lib/fire";
 import { MAP_STYLES, type MapStyleKey } from "@/lib/mapStyles";
 import { useTranslations } from "@/lib/i18n/LocaleProvider";
@@ -167,6 +168,7 @@ export default function TopBar(props: Props) {
               <button style={{ ...secondaryBtn, ...(showIncidents ? activeToggle : {}) }} onClick={onToggleIncidents}>{t("topBar.incidents")}</button>
               <button style={secondaryBtn} onClick={onEnterHistory}><ClockIcon size={15} /> {t("topBar.replay")}</button>
             </div>
+            <Link href="/stats" style={{ ...secondaryBtn, textDecoration: "none" }}>{t("topBar.statistics")} →</Link>
             <GitHubLink t={t} />
             <div style={{ fontSize: 9.5, color: "var(--text-muted)", textAlign: "center", opacity: 0.8 }}>
               {t("common.mapAttribution")}
@@ -206,6 +208,9 @@ export default function TopBar(props: Props) {
           <ClockIcon size={15} /> {t("topBar.replayLast5Days")}
         </button>
       )}
+      <Link href="/stats" style={{ ...secondaryBtn, width: "100%", marginTop: 8, textDecoration: "none" }}>
+        {t("topBar.statistics")} →
+      </Link>
       <div style={{ marginTop: 10, display: "flex", justifyContent: "center" }}>
         <LanguageSwitcher />
       </div>

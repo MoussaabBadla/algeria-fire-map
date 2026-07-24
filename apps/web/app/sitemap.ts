@@ -11,5 +11,11 @@ export default function sitemap(): MetadataRoute.Sitemap {
       priority: 1,
       alternates: { languages: { ar: SITE_URL, fr: SITE_URL, en: SITE_URL } },
     },
+    {
+      url: `${SITE_URL}/stats`,
+      lastModified: new Date(),
+      changeFrequency: "daily",
+      priority: 0.8,
+    },
   ];
 }

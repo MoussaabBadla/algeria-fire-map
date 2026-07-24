@@ -22,7 +22,8 @@
     "on": "on",
     "live": "LIVE",
     "replayBadge": "REPLAY",
-    "incidents": "Incidents"
+    "incidents": "Incidents",
+    "statistics": "Statistics"
   },
   "incident": {
     "title": "Fire incident",
@@ -142,5 +143,58 @@
     "fireWeatherRiskFwi": "Fire-weather risk (FWI)",
     "rh": "RH",
     "wind": "wind"
+  },
+  "stats": {
+    "title": "Algeria Wildfire Statistics",
+    "subtitle": "Satellite fire activity across Algeria's 69 wilayas, from NASA FIRMS.",
+    "backToMap": "Back to map",
+    "viewMap": "Live map",
+    "coverage": "Data {first} — {last}",
+    "kpi": {
+      "detections": "Total detections",
+      "confirmed": "Confirmed fires",
+      "wilayas": "Wilayas affected",
+      "energy": "Total radiative power",
+      "incidents": "Active incidents",
+      "thisYear": "Detections this year",
+      "perYearAvg": "Avg / year",
+      "worstYear": "Worst year"
+    },
+    "seasonality": {
+      "title": "Fire season",
+      "desc": "Detections by month, summed across all years — Algeria's fire season peaks in summer.",
+      "inSeason": "Fire season",
+      "offSeason": "Off season"
+    },
+    "yearly": {
+      "title": "Year by year",
+      "desc": "Total detections per year. The dashed line is the multi-year average.",
+      "average": "average"
+    },
+    "topWilayas": {
+      "title": "Most-affected wilayas",
+      "desc": "By confirmed fires (high-confidence, strong detections).",
+      "confirmed": "confirmed",
+      "detections": "detections"
+    },
+    "intensity": {
+      "title": "Fire intensity",
+      "desc": "Detections by fire radiative power (FRP, in megawatts) — a few intense fires dominate.",
+      "unit": "MW"
+    },
+    "terms": {
+      "detections": "detections",
+      "confirmed": "confirmed",
+      "incidents": "incidents"
+    },
+    "methodology": {
+      "title": "About this data",
+      "b1": "Detections are not area burned. We count satellite fire pixels and their radiative power (FRP), not hectares. A detection is a ~375 m (VIIRS) or ~1 km (MODIS) thermal signal, not a mapped burn scar.",
+      "b2": "Coverage differs by sensor. VIIRS (375 m) data begins ~2012; MODIS (1 km) ~2000. Later years have more satellites and finer resolution, which inflates counts versus earlier years.",
+      "b3": "Clouds, smoke and overpass timing cause undercounting. Satellites only see at pass times; a quiet day may mean poor viewing, not fewer fires.",
+      "b4": "Recent data is near-real-time and may be revised; older data uses the science-quality archive.",
+      "b5": "\"Confirmed\" means a high-confidence detection with FRP ≥ 15 MW, clipped to Algeria's borders. Persistent industrial gas-flares are largely excluded by this filter.",
+      "b6": "One fire spans many pixels and passes — that is why we cluster detections into incidents. Counts are estimates, not an official tally."
+    }
   }
 }
