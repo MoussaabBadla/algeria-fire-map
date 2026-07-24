@@ -1,5 +1,6 @@
 import en from "@/messages/en.json";
 import ar from "@/messages/ar.json";
+import fr from "@/messages/fr.json";
 import type { Locale } from "./config";
 
 // `en.json` is the source of truth. Typing every other locale against it
@@ -7,4 +8,4 @@ import type { Locale } from "./config";
 // (missing key, wrong nesting) instead of silently falling back at runtime.
 export type Messages = typeof en;
 
-export const MESSAGES: Record<Locale, Messages> = { en, ar };
+export const MESSAGES: Record<Locale, Messages> = { en, ar, fr };
