@@ -227,7 +227,9 @@
       "incidentsDesc": "Confirmed fire incidents in this wilaya, most recent first.",
       "noIncidents": "No confirmed incidents on record for this wilaya.",
       "notFound": "Wilaya not found.",
-      "backToStats": "All wilayas"
+      "backToStats": "All wilayas",
+      "mapTitle": "Map",
+      "mapDesc": "Fire incidents recorded in this wilaya."
     }
   }
 }

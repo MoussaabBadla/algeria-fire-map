@@ -2,11 +2,15 @@
 
 import { useMemo } from "react";
 import Link from "next/link";
+import dynamic from "next/dynamic";
 import type { WilayaStatsData } from "@/lib/api";
 import { useLocale, useTranslations } from "@/lib/i18n/LocaleProvider";
 import { wilayaName } from "@/lib/i18n/wilayaNames";
 import { StatsHeader } from "./StatsView";
 import { ACCENT, Section, Tile, InsightCard, Seasonality, Yearly, Intensity, useNum, monthLabels, intlLoc } from "./statsCharts";
+
+// Codes 1–58 have boundary polygons; 59–69 (delegated wilayas) render no map.
+const WilayaMiniMap = dynamic(() => import("./WilayaMiniMap"), { ssr: false });
 
 function IncidentRow({ inc, t, locale }: { inc: WilayaStatsData["incidents"][0]; t: ReturnType<typeof useTranslations>; locale: string }) {
   const fmt = (iso: string | null) =>
@@ -83,6 +87,12 @@ export default function WilayaStatsView({ data }: { data: WilayaStatsData }) {
             {peak && <InsightCard label={t("stats.peakLabel")} value={mLong[peak.month - 1]} sub={t("stats.seasonality.inSeason")} />}
             {worst && <InsightCard label={t("stats.worstLabel")} value={String(worst.year)} sub={`${nf.format(worst.detections)} ${t("stats.terms.detections")}`} />}
           </div>
+
+          {data.wilaya.code <= 58 && (
+            <Section title={t("stats.wilaya.mapTitle")} desc={t("stats.wilaya.mapDesc")}>
+              <WilayaMiniMap code={data.wilaya.code} />
+            </Section>
+          )}
 
           <Section title={t("stats.seasonality.title")} desc={t("stats.seasonality.desc")}>
             <Seasonality byMonth={data.by_month} labels={{ inSeason: t("stats.seasonality.inSeason"), offSeason: t("stats.seasonality.offSeason") }} />

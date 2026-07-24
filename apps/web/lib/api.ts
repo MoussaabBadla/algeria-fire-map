@@ -107,11 +107,12 @@ export interface EventCollection {
   properties: { count: number; enabled: boolean };
 }
 
-export function eventsKey(opts: { activeOnly?: boolean; days?: number; limit?: number } = {}): string {
+export function eventsKey(opts: { activeOnly?: boolean; days?: number; limit?: number; wilaya?: number } = {}): string {
   const p = new URLSearchParams();
   if (opts.activeOnly) p.set("active_only", "true");
   if (opts.days != null) p.set("days", String(opts.days));
   if (opts.limit != null) p.set("limit", String(opts.limit));
+  if (opts.wilaya != null) p.set("wilaya", String(opts.wilaya));
   const qs = p.toString();
   return `${API_URL}/events${qs ? `?${qs}` : ""}`;
 }
