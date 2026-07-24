@@ -79,6 +79,48 @@ export async function fetchPlace(url: string): Promise<PlaceInfo> {
   return res.json();
 }
 
+// --- Incidents (clustered fire_events, persisted server-side) ---
+export interface EventProperties {
+  id: number;
+  first_seen: string | null;
+  last_seen: string | null;
+  detection_count: number;
+  max_frp: number | null;
+  total_frp: number | null;
+  is_active: boolean;
+  wilaya_code: number | null;
+  wilaya_name: string | null;
+  wilaya_name_ar: string | null;
+  hull?: { type: "Polygon"; coordinates: number[][][] };
+}
+
+export interface EventFeature {
+  type: "Feature";
+  geometry: { type: "Point"; coordinates: [number, number] };
+  properties: EventProperties;
+}
+
+export interface EventCollection {
+  type: "FeatureCollection";
+  features: EventFeature[];
+  properties: { count: number; enabled: boolean };
+}
+
+export function eventsKey(opts: { activeOnly?: boolean; days?: number; limit?: number } = {}): string {
+  const p = new URLSearchParams();
+  if (opts.activeOnly) p.set("active_only", "true");
+  if (opts.days != null) p.set("days", String(opts.days));
+  if (opts.limit != null) p.set("limit", String(opts.limit));
+  const qs = p.toString();
+  return `${API_URL}/events${qs ? `?${qs}` : ""}`;
+}
+
+export async function fetchEvents(url: string): Promise<EventCollection> {
+  const res = await fetch(url);
+  if (!res.ok) throw new Error("events fetch failed");
+  return res.json();
+}
+
 export interface RiskDay {
   fwi: number;
   class: string;
