@@ -68,11 +68,22 @@ def _summer_key(win_start: date) -> tuple:
     return (0 if is_summer else 1, -win_start.toordinal())
 
 
-def _plan(start: date, end: date, sources, summer_only: bool, summer_first: bool):
-    """Build the (source, window_start) work list, filtered/ordered as requested."""
+def _plan(start: date, end: date, sources, summer_only: bool, summer_first: bool,
+          avail: dict[str, tuple[date, date]] | None = None):
+    """Build the (source, window_start) work list, filtered/ordered as requested.
+    Clamps each source to its availability window when `avail` is provided."""
+    avail = avail or {}
     jobs = []
     for src in sources:
-        for w in _windows(start, end):
+        s, e = start, end
+        if src in avail:
+            lo, hi = avail[src]
+            s = max(s, lo)
+            e = min(e, hi + timedelta(days=1))  # hi is inclusive
+            if s >= e:
+                log.info("skip %s — no availability in [%s, %s)", src, start, end)
+                continue
+        for w in _windows(s, e):
             if summer_only and w.month not in SUMMER_MONTHS:
                 # Skip a window only if it lies entirely outside summer.
                 if (w + timedelta(days=CHUNK_DAYS - 1)).month not in SUMMER_MONTHS:
@@ -83,6 +94,28 @@ def _plan(start: date, end: date, sources, summer_only: bool, summer_first: bool
     else:
         jobs.sort(key=lambda j: (-j[1].toordinal()))  # newest-first
     return jobs
+
+
+async def _availability(key: str) -> dict[str, tuple[date, date]]:
+    """FIRMS data_availability → {source: (min_date, max_date)}. Lets us clamp
+    each source's windows to when its satellite actually has data (no wasted
+    requests / 400s before a sensor came online)."""
+    url = f"https://firms.modaps.eosdis.nasa.gov/api/data_availability/csv/{key}/all"
+    out: dict[str, tuple[date, date]] = {}
+    try:
+        async with httpx.AsyncClient() as client:
+            resp = await client.get(url, timeout=30.0)
+            resp.raise_for_status()
+        for line in resp.text.splitlines()[1:]:
+            parts = line.split(",")
+            if len(parts) >= 3:
+                try:
+                    out[parts[0]] = (_parse_date(parts[1]), _parse_date(parts[2]))
+                except ValueError:
+                    continue
+    except (httpx.HTTPError, httpx.TimeoutException) as e:
+        log.warning("data_availability lookup failed (%s); not clamping", e)
+    return out
 
 
 async def _already_done(pool) -> set[tuple]:
@@ -153,7 +186,8 @@ async def run_backfill(start: date, end: date, sources, summer_only: bool,
     if not keys:
         raise SystemExit("No FIRMS keys configured.")
 
-    jobs = _plan(start, end, sources, summer_only, summer_first)
+    avail = await _availability(keys[0])
+    jobs = _plan(start, end, sources, summer_only, summer_first, avail)
     done = await _already_done(pool)
     todo = [j for j in jobs if j not in done]
     log.info("backfill plan: %d windows total, %d already done, %d to fetch, across %d key(s)",
