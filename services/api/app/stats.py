@@ -130,3 +130,106 @@ async def national_summary() -> dict:
         "top_wilayas_year": [{"code": r["code"], "name": r["name"], "name_ar": r["name_ar"], "detections": r["det"], "confirmed": r["conf"]} for r in top_year],
         "frp_buckets": [frp["b0"], frp["b1"], frp["b2"], frp["b3"], frp["b4"]],
     }
+
+
+_WILAYA_FRP_SQL = """
+select
+    count(*) filter (where frp < 5)                  as b0,
+    count(*) filter (where frp >= 5   and frp < 20)  as b1,
+    count(*) filter (where frp >= 20  and frp < 50)  as b2,
+    count(*) filter (where frp >= 50  and frp < 100) as b3,
+    count(*) filter (where frp >= 100)               as b4
+from detections where wilaya_code = $1
+"""
+
+
+async def wilaya_summary(code: int) -> dict:
+    """Per-wilaya statistics for /stats/wilaya/{code}."""
+    pool = await get_pool()
+    if pool is None:
+        return {"enabled": False}
+
+    async with pool.acquire() as conn:
+        w = await conn.fetchrow("select code, name, name_ar from wilayas where code = $1", code)
+        if w is None:
+            return {"enabled": True, "found": False}
+
+        # National rank by confirmed fires + this wilaya's share of the national total.
+        rank = await conn.fetchrow(
+            """
+            with tot as (
+                select wilaya_code, sum(confirmed)::bigint conf, sum(detections)::bigint det
+                from stats_monthly group by wilaya_code
+            )
+            select
+                coalesce((select conf from tot where wilaya_code = $1), 0)  as conf,
+                coalesce((select det  from tot where wilaya_code = $1), 0)  as det,
+                (select count(*) + 1 from tot t2
+                    where t2.conf > coalesce((select conf from tot where wilaya_code = $1), 0)) as rank,
+                (select count(*) from tot) as ranked_total,
+                (select sum(confirmed) from stats_monthly) as nat_conf,
+                (select sum(detections) from stats_monthly) as nat_det
+            """,
+            code,
+        )
+
+        last_date = await conn.fetchval("select max(acq_datetime)::date from detections")
+        cur_year = last_date.year if last_date else None
+        this_year = await conn.fetchval(
+            "select coalesce(sum(detections),0) from stats_monthly where wilaya_code=$1 and year=$2",
+            code, cur_year,
+        )
+
+        by_year = await conn.fetch(
+            """select year, sum(detections)::int det, sum(confirmed)::int conf
+               from stats_monthly where wilaya_code=$1 group by year order by year""",
+            code,
+        )
+        by_month = await conn.fetch(
+            "select month, sum(detections)::int det from stats_monthly where wilaya_code=$1 group by month order by month",
+            code,
+        )
+        frp = await conn.fetchrow(_WILAYA_FRP_SQL, code)
+
+        # Recent confirmed incidents in this wilaya.
+        incidents = await conn.fetch(
+            """select id, first_seen, last_seen, detection_count, max_frp, is_active
+               from fire_events
+               where wilaya_code = $1 and confirmed
+               order by last_seen desc limit 10""",
+            code,
+        )
+        biggest = await conn.fetchval(
+            "select max(max_frp) from fire_events where wilaya_code=$1", code
+        )
+
+    nat_conf = rank["nat_conf"] or 1
+    return {
+        "enabled": True,
+        "found": True,
+        "wilaya": {"code": w["code"], "name": w["name"], "name_ar": w["name_ar"]},
+        "kpis": {
+            "detections": int(rank["det"]),
+            "confirmed": int(rank["conf"]),
+            "this_year": int(this_year or 0),
+            "rank": int(rank["rank"]),
+            "ranked_total": int(rank["ranked_total"]),
+            "share_pct": round(100 * (rank["conf"] or 0) / nat_conf, 1),
+            "biggest_frp": round(biggest) if biggest else None,
+        },
+        "coverage": {"current_year": cur_year},
+        "by_year": [{"year": r["year"], "detections": r["det"], "confirmed": r["conf"]} for r in by_year],
+        "by_month": [{"month": r["month"], "detections": r["det"]} for r in by_month],
+        "frp_buckets": [frp["b0"], frp["b1"], frp["b2"], frp["b3"], frp["b4"]],
+        "incidents": [
+            {
+                "id": r["id"],
+                "first_seen": r["first_seen"].isoformat() if r["first_seen"] else None,
+                "last_seen": r["last_seen"].isoformat() if r["last_seen"] else None,
+                "detection_count": r["detection_count"],
+                "max_frp": round(r["max_frp"]) if r["max_frp"] else None,
+                "is_active": r["is_active"],
+            }
+            for r in incidents
+        ],
+    }
