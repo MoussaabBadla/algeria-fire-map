@@ -83,11 +83,17 @@ export default function WilayaMiniMap({ code }: { code: number }) {
         },
       });
       readyRef.current = true;
+      map.resize(); // container may have grown after the dynamic import mounted
+      map.fitBounds(bounds, { padding: 24, animate: false });
       const src = map.getSource("inc") as maplibregl.GeoJSONSource | undefined;
       if (src && incidents) src.setData(incidents as unknown as GeoJSON.FeatureCollection);
     });
 
-    return () => { map.remove(); mapRef.current = null; readyRef.current = false; };
+    // Keep the canvas matched to the container (responsive / late layout).
+    const ro = new ResizeObserver(() => map.resize());
+    ro.observe(containerRef.current);
+
+    return () => { ro.disconnect(); map.remove(); mapRef.current = null; readyRef.current = false; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [code]);
 
