@@ -180,6 +180,33 @@ async def national_summary() -> dict:
 
         curve = await _seasonal_curve(conn, cur_year)
 
+        # Per-year breakdowns → instant client-side year filtering.
+        m_rows = await conn.fetch(
+            "select year, month, sum(detections)::int det, sum(confirmed)::int conf from stats_monthly group by year, month"
+        )
+        w_rows = await conn.fetch(
+            "select year, wilaya_code code, sum(detections)::int det, sum(confirmed)::int conf from stats_monthly group by year, wilaya_code"
+        )
+        f_rows = await conn.fetch(
+            """select extract(year from acq_datetime)::int y,
+                      count(*) filter (where frp < 5)                  b0,
+                      count(*) filter (where frp >= 5   and frp < 20)  b1,
+                      count(*) filter (where frp >= 20  and frp < 50)  b2,
+                      count(*) filter (where frp >= 50  and frp < 100) b3,
+                      count(*) filter (where frp >= 100)               b4
+               from detections group by y"""
+        )
+
+    monthly_by_year: dict[str, dict] = {}
+    for r in m_rows:
+        d = monthly_by_year.setdefault(str(r["year"]), {"det": [0] * 12, "conf": [0] * 12})
+        d["det"][r["month"] - 1] = r["det"]
+        d["conf"][r["month"] - 1] = r["conf"]
+    wilaya_by_year: dict[str, list] = {}
+    for r in w_rows:
+        wilaya_by_year.setdefault(str(r["year"]), []).append([r["code"], r["det"], r["conf"]])
+    frp_by_year = {str(r["y"]): [r["b0"], r["b1"], r["b2"], r["b3"], r["b4"]] for r in f_rows}
+
     return {
         "enabled": True,
         "kpis": {
@@ -202,6 +229,12 @@ async def national_summary() -> dict:
         "frp_buckets": [frp["b0"], frp["b1"], frp["b2"], frp["b3"], frp["b4"]],
         "wilaya_totals": [{"code": r["code"], "detections": r["det"], "confirmed": r["conf"]} for r in totals],
         "seasonal_curve": curve,
+        # Per-year breakdowns for the year filter. months are [Jan..Dec]; wilaya
+        # rows are [code, detections, confirmed]; frp is the 5 FRP buckets.
+        "years": sorted((int(y) for y in monthly_by_year), reverse=True),
+        "monthly_by_year": monthly_by_year,
+        "wilaya_by_year": wilaya_by_year,
+        "frp_by_year": frp_by_year,
     }
 
 
