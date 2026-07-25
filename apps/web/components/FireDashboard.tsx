@@ -247,7 +247,7 @@ export default function FireDashboard() {
         shownCount={displayed?.features.length ?? 0}
         totalCount={liveData?.properties.count ?? 0}
         generatedAt={liveData?.properties.generated_at}
-        loading={isLoading}
+        loading={isLoading && !liveData}
         error={error ? String(error.message ?? error) : undefined}
         historyMode={historyMode}
         onEnterHistory={enterHistory}

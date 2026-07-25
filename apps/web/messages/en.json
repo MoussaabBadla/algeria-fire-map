@@ -72,7 +72,9 @@
     "ofHotspotsUpdated": "of {total} hotspots · updated {time}",
     "howDetectedAria": "How fires are confirmed",
     "howDetectedTitle": "How fires are detected",
-    "howConfirmedTitle": "How we confirm them"
+    "howConfirmedTitle": "How we confirm them",
+    "loadingCount": "loading…",
+    "wakingFeed": "waking the live feed…"
   },
   "fireDetail": {
     "intensitySuffix": "{level} intensity",

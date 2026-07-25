@@ -97,6 +97,10 @@ html[dir="rtl"] body {
   0%, 100% { opacity: 1; transform: scale(1); }
   50% { opacity: 0.45; transform: scale(0.82); }
 }
+@keyframes shimmer {
+  0% { background-position: 100% 0; }
+  100% { background-position: -100% 0; }
+}
 @keyframes ringPulse {
   0% { transform: scale(0.6); opacity: 0.9; }
   100% { transform: scale(2.6); opacity: 0; }

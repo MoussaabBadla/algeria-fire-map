@@ -72,7 +72,9 @@
     "ofHotspotsUpdated": "من أصل {total} بؤرة حرارية · آخر تحديث {time}",
     "howDetectedAria": "كيف يتم تأكيد الحرائق",
     "howDetectedTitle": "كيف يتم رصد الحرائق",
-    "howConfirmedTitle": "كيف نؤكدها"
+    "howConfirmedTitle": "كيف نؤكدها",
+    "loadingCount": "جارٍ التحميل…",
+    "wakingFeed": "جارٍ إيقاظ البث المباشر…"
   },
   "fireDetail": {
     "intensitySuffix": "شدة {level}",

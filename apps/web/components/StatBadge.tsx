@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useTranslations } from "@/lib/i18n/LocaleProvider";
 import type { Translator } from "@/lib/i18n/config";
 
@@ -21,14 +21,62 @@ function lastUpdated(iso: string | undefined, t: Translator): string {
   return t("time.hAgo", { n: Math.round(mins / 60) });
 }
 
+// Shimmer skeleton block shown while the first fetch is in flight.
+function Skeleton({ w, h, r = 6 }: { w: number; h: number; r?: number }) {
+  return (
+    <span
+      aria-hidden
+      style={{
+        display: "inline-block",
+        width: w,
+        height: h,
+        borderRadius: r,
+        background:
+          "linear-gradient(90deg, rgba(255,255,255,0.06) 25%, rgba(255,255,255,0.14) 37%, rgba(255,255,255,0.06) 63%)",
+        backgroundSize: "400% 100%",
+        animation: "shimmer 1.4s ease-in-out infinite",
+      }}
+    />
+  );
+}
+
+// Loading state for the first fetch: skeleton + "loading…", escalating to
+// "waking the live feed…" after a few seconds to explain slow cold starts.
+function LoadingBadge({ compact }: { compact?: boolean }) {
+  const t = useTranslations();
+  const [slow, setSlow] = useState(false);
+  useEffect(() => {
+    const id = setTimeout(() => setSlow(true), 3000);
+    return () => clearTimeout(id);
+  }, []);
+  return (
+    <div aria-busy="true" aria-live="polite">
+      <div style={{ display: "flex", alignItems: "baseline", gap: 8 }}>
+        <Skeleton w={compact ? 42 : 58} h={compact ? 26 : 34} r={8} />
+        <span style={{ fontSize: 12.5, color: "var(--text-muted)" }}>
+          {slow ? t("statBadge.wakingFeed") : t("statBadge.loadingCount")}
+        </span>
+      </div>
+      {!compact && <div style={{ marginTop: 10 }}><Skeleton w={180} h={12} /></div>}
+    </div>
+  );
+}
+
 export default function StatBadge({ shownCount, totalCount, generatedAt, loading, error, compact }: Props) {
   const [showInfo, setShowInfo] = useState(false);
   const t = useTranslations();
 
   if (error) return <div style={{ color: "var(--fire-4)", fontSize: 13 }}>{error}</div>;
 
+  // First load, no data yet → show a skeleton instead of a confident, wrong "0".
+  // A cold backend (Railway idle spin-up) can take 20–30s, so after a few seconds
+  // escalate the copy to make clear it's a slow fetch, not "zero fires".
+  if (loading) {
+    return <LoadingBadge compact={compact} />;
+  }
+
   return (
-    <div>
+    <div aria-live="polite">
       <div style={{ display: "flex", alignItems: "baseline", gap: 8 }}>
         <span style={{ fontSize: compact ? 26 : 34, fontWeight: 700, letterSpacing: "-0.02em", fontVariantNumeric: "tabular-nums" }}>
           {shownCount.toLocaleString()}
