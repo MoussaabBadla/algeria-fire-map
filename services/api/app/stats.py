@@ -109,6 +109,12 @@ async def national_summary() -> dict:
         )
         frp = await conn.fetchrow(_FRP_BUCKETS_SQL)
 
+        # Every wilaya's totals — powers the national choropleth.
+        totals = await conn.fetch(
+            """select wilaya_code code, sum(detections)::int det, sum(confirmed)::int conf
+               from stats_monthly group by wilaya_code"""
+        )
+
     return {
         "enabled": True,
         "kpis": {
@@ -129,6 +135,7 @@ async def national_summary() -> dict:
         "top_wilayas_all": [{"code": r["code"], "name": r["name"], "name_ar": r["name_ar"], "detections": r["det"], "confirmed": r["conf"]} for r in top_all],
         "top_wilayas_year": [{"code": r["code"], "name": r["name"], "name_ar": r["name_ar"], "detections": r["det"], "confirmed": r["conf"]} for r in top_year],
         "frp_buckets": [frp["b0"], frp["b1"], frp["b2"], frp["b3"], frp["b4"]],
+        "wilaya_totals": [{"code": r["code"], "detections": r["det"], "confirmed": r["conf"]} for r in totals],
     }
 
 

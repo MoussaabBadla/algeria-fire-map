@@ -15,7 +15,7 @@ from ..stats import national_summary, wilaya_summary
 
 router = APIRouter()
 
-_CACHE_KEY = "stats:national:v2"  # v2 = wilayas ranked by confirmed fires
+_CACHE_KEY = "stats:national:v3"  # v3 = + wilaya_totals (choropleth)
 _TTL = 900  # 15 min; the underlying data changes only a few times/day
 
 
