@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
+import dynamic from "next/dynamic";
 import type { StatsData } from "@/lib/api";
 import { useLocale, useTranslations } from "@/lib/i18n/LocaleProvider";
 import { wilayaName } from "@/lib/i18n/wilayaNames";
@@ -12,6 +13,8 @@ import {
   ACCENT, Section, Tile, InsightCard, Seasonality, Yearly, Intensity,
   useNum, monthLabels, compact, intlLoc,
 } from "./statsCharts";
+
+const NationalChoropleth = dynamic(() => import("./NationalChoropleth"), { ssr: false });
 
 // Most-affected wilayas — national-only, ranked by confirmed fires.
 function TopWilayas({ data, unit }: { data: StatsData; unit: string }) {
@@ -134,6 +137,17 @@ export default function StatsView({ data }: { data: StatsData }) {
             {ins.worst && <InsightCard label={t("stats.worstLabel")} value={String(ins.worst.year)} sub={t("stats.vsAvg", { mult: nf.format(ins.mult) })} />}
             <InsightCard label={t("stats.intenseLabel")} value={`${nf.format(ins.intensePct)}%`} sub={t("stats.intenseSub")} />
           </div>
+
+          {data.wilaya_totals?.length > 0 && (
+            <Section title={t("stats.mapTitle")} desc={t("stats.mapDesc")}>
+              <NationalChoropleth totals={data.wilaya_totals} />
+              <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 10, fontSize: 11, color: "var(--text-secondary)" }}>
+                <span>{t("stats.mapLow")}</span>
+                <div style={{ flex: 1, maxWidth: 220, height: 8, borderRadius: 99, background: "linear-gradient(90deg,#ffe066,#ffa630,#fb5607,#e01e37,#a4133c)" }} />
+                <span>{t("stats.mapHigh")}</span>
+              </div>
+            </Section>
+          )}
 
           <Section title={t("stats.seasonality.title")} desc={t("stats.seasonality.desc")} takeaway={t("stats.peakTakeaway", { month: mLong[ins.peak.month - 1], pct: nf.format(ins.peakPct) })}>
             <Seasonality byMonth={data.by_month} labels={{ inSeason: t("stats.seasonality.inSeason"), offSeason: t("stats.seasonality.offSeason") }} />

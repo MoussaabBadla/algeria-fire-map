@@ -230,6 +230,10 @@
       "backToStats": "All wilayas",
       "mapTitle": "Map",
       "mapDesc": "Fire incidents recorded in this wilaya."
-    }
+    },
+    "mapTitle": "Where fires burn",
+    "mapDesc": "Wilayas coloured by confirmed fires since records began. Tap a wilaya for its page.",
+    "mapLow": "Fewer",
+    "mapHigh": "More"
   }
 }

@@ -148,6 +148,7 @@ export interface StatsData {
   top_wilayas_all: StatsWilaya[];
   top_wilayas_year: StatsWilaya[];
   frp_buckets: number[]; // [<5, 5-20, 20-50, 50-100, 100+]
+  wilaya_totals: { code: number; detections: number; confirmed: number }[];
 }
 
 export function statsKey(): string {
