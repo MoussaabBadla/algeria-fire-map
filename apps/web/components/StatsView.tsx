@@ -3,7 +3,8 @@
 import { useMemo, useState } from "react";
 import Link from "next/link";
 import dynamic from "next/dynamic";
-import type { StatsData } from "@/lib/api";
+import useSWR from "swr";
+import { statsKey, fetchStats, type StatsData } from "@/lib/api";
 import { useLocale, useTranslations } from "@/lib/i18n/LocaleProvider";
 import { wilayaName } from "@/lib/i18n/wilayaNames";
 import LanguageSwitcher from "./LanguageSwitcher";
@@ -87,7 +88,11 @@ function FilterBar({ years, year, metric, onYear, onMetric }: { years: number[];
   );
 }
 
-export default function StatsView({ data }: { data: StatsData }) {
+export default function StatsView({ data: initial }: { data: StatsData }) {
+  // Also fetch client-side so the filters always reflect current data, even if
+  // the server render came from a stale ISR/fetch cache right after a deploy.
+  const { data: fresh } = useSWR(statsKey(), fetchStats, { fallbackData: initial, revalidateOnFocus: false });
+  const data = fresh ?? initial;
   const t = useTranslations();
   const { locale } = useLocale();
   const nf = useNum();
