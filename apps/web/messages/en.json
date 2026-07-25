@@ -234,6 +234,17 @@
     "mapTitle": "Where fires burn",
     "mapDesc": "Wilayas coloured by confirmed fires since records began. Tap a wilaya for its page.",
     "mapLow": "Fewer",
-    "mapHigh": "More"
+    "mapHigh": "More",
+    "signature": {
+      "title": "This year vs history",
+      "desc": "Cumulative fire detections through the season, this year against the range of past years.",
+      "thisYear": "This year",
+      "median": "Typical year",
+      "band": "Usual range",
+      "above": "{year} is running above a typical season so far.",
+      "below": "{year} is running below a typical season so far.",
+      "typical": "{year} is tracking a typical season so far.",
+      "wellAbove": "{year} is already an exceptionally severe season."
+    }
   }
 }

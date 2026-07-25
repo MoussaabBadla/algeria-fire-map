@@ -149,6 +149,18 @@ export interface StatsData {
   top_wilayas_year: StatsWilaya[];
   frp_buckets: number[]; // [<5, 5-20, 20-50, 50-100, 100+]
   wilaya_totals: { code: number; detections: number; confirmed: number }[];
+  seasonal_curve: SeasonalCurve;
+}
+
+export interface SeasonalCurve {
+  start_doy: number;
+  doys: number[];
+  current_year: number | null;
+  current: number[]; // cumulative, trimmed to today
+  median: number[];
+  p10: number[];
+  p90: number[];
+  hist_years: number[];
 }
 
 export function statsKey(): string {

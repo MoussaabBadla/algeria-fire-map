@@ -4,6 +4,7 @@
 // national (/stats) and per-wilaya (/stats/[code]) pages.
 import { useMemo, useState } from "react";
 import { useLocale } from "@/lib/i18n/LocaleProvider";
+import type { SeasonalCurve } from "@/lib/api";
 
 export const FRP_RAMP = ["#ffe066", "#ffa630", "#fb5607", "#e01e37", "#a4133c"];
 export const IN_SEASON = "#fb5607";
@@ -148,6 +149,53 @@ export function Yearly({ byYear, avgLabel }: { byYear: { year: number; detection
         <line x1={padL} y1={avgY} x2={W} y2={avgY} stroke="#cbd5e1" strokeWidth={1} strokeDasharray="5 4" opacity={0.7} />
         <text x={W - 2} y={avgY - 5} textAnchor="end" fontSize={11} fill="#cbd5e1">{avgLabel} · {nf.format(Math.round(avg))}</text>
       </svg>
+    </div>
+  );
+}
+
+// Signature chart — cumulative summer detections, this year vs historical
+// envelope (EFFIS-style). X = day-of-year (Jun–Oct), Y = cumulative detections.
+export function SignatureCurve({ curve, labels }: { curve: SeasonalCurve; labels: { thisYear: string; median: string; band: string } }) {
+  const { locale } = useLocale();
+  const nf = useNum();
+  const doys = curve.doys;
+  if (!doys.length) return null;
+  const n = doys.length;
+  const maxY = Math.max(...curve.p90, ...(curve.current.length ? curve.current : [0]), 1);
+  const W = 720, H = 300, padB = 26, padT = 14, padL = 34, padR = 6;
+  const x = (i: number) => padL + ((W - padL - padR) * i) / (n - 1);
+  const y = (v: number) => H - padB - ((H - padB - padT) * v) / maxY;
+
+  // Month tick day-of-year (non-leap): Jun1=152 Jul1=182 Aug1=213 Sep1=244 Oct1=274 Nov1=305
+  const ticks = [152, 182, 213, 244, 274, 305].filter((d) => d >= doys[0] && d <= doys[n - 1]);
+  const monLoc = locale === "ar" ? "ar-DZ" : "en-US";
+  const monLabel = (doy: number) => new Date(2021, 0, doy).toLocaleString(monLoc, { month: "short" });
+  const idxOfDoy = (d: number) => doys.indexOf(d);
+
+  const line = (arr: number[]) => arr.map((v, i) => `${i === 0 ? "M" : "L"}${x(i).toFixed(1)},${y(v).toFixed(1)}`).join(" ");
+  // p10..p90 band as a closed area.
+  const band = `${curve.p90.map((v, i) => `${i === 0 ? "M" : "L"}${x(i).toFixed(1)},${y(v).toFixed(1)}`).join(" ")} ` +
+    `${curve.p10.slice().reverse().map((v, i) => `L${x(n - 1 - i).toFixed(1)},${y(v).toFixed(1)}`).join(" ")} Z`;
+
+  return (
+    <div style={{ direction: "ltr", overflowX: "auto" }}>
+      <svg viewBox={`0 0 ${W} ${H}`} width="100%" style={{ maxWidth: "100%", display: "block", minWidth: 560 }} role="img">
+        <Grid W={W} H={H} padT={padT} padB={padB} max={maxY} />
+        {ticks.map((d) => (
+          <text key={d} x={x(idxOfDoy(d))} y={H - 9} textAnchor="middle" fontSize={11} fill="var(--text-muted)">{monLabel(d)}</text>
+        ))}
+        <path d={band} fill="#ff7a1a" opacity={0.12} />
+        <path d={line(curve.median)} fill="none" stroke="#94a3b8" strokeWidth={1.3} strokeDasharray="5 4" opacity={0.8} />
+        {curve.current.length > 1 && <path d={line(curve.current)} fill="none" stroke={ACCENT} strokeWidth={2.6} strokeLinejoin="round" />}
+        {curve.current.length > 0 && (
+          <circle cx={x(curve.current.length - 1)} cy={y(curve.current[curve.current.length - 1])} r={3.5} fill={ACCENT} />
+        )}
+      </svg>
+      <div style={{ display: "flex", flexWrap: "wrap", gap: 16, marginTop: 6, fontSize: 12, color: "var(--text-secondary)" }}>
+        <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}><i style={{ width: 14, height: 3, borderRadius: 2, background: ACCENT }} /> {labels.thisYear} ({curve.current_year})</span>
+        <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}><i style={{ width: 14, height: 0, borderTop: "2px dashed #94a3b8" }} /> {labels.median}</span>
+        <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}><i style={{ width: 12, height: 10, borderRadius: 3, background: "#ff7a1a", opacity: 0.25 }} /> {labels.band}</span>
+      </div>
     </div>
   );
 }

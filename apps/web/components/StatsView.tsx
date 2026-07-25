@@ -10,7 +10,7 @@ import LanguageSwitcher from "./LanguageSwitcher";
 import NavMenu from "./NavMenu";
 import { FlameIcon } from "./Icons";
 import {
-  ACCENT, Section, Tile, InsightCard, Seasonality, Yearly, Intensity,
+  ACCENT, Section, Tile, InsightCard, Seasonality, Yearly, Intensity, SignatureCurve,
   useNum, monthLabels, compact, intlLoc,
 } from "./statsCharts";
 
@@ -137,6 +137,18 @@ export default function StatsView({ data }: { data: StatsData }) {
             {ins.worst && <InsightCard label={t("stats.worstLabel")} value={String(ins.worst.year)} sub={t("stats.vsAvg", { mult: nf.format(ins.mult) })} />}
             <InsightCard label={t("stats.intenseLabel")} value={`${nf.format(ins.intensePct)}%`} sub={t("stats.intenseSub")} />
           </div>
+
+          {data.seasonal_curve?.current?.length > 1 && (() => {
+            const sc = data.seasonal_curve;
+            const i = sc.current.length - 1;
+            const cur = sc.current[i], med = sc.median[i] || 1, hi = sc.p90[i];
+            const key = cur > hi ? "wellAbove" : cur > med * 1.15 ? "above" : cur < med * 0.85 ? "below" : "typical";
+            return (
+              <Section title={t("stats.signature.title")} desc={t("stats.signature.desc")} takeaway={t(`stats.signature.${key}`, { year: sc.current_year ?? "" })}>
+                <SignatureCurve curve={sc} labels={{ thisYear: t("stats.signature.thisYear"), median: t("stats.signature.median"), band: t("stats.signature.band") }} />
+              </Section>
+            );
+          })()}
 
           {data.wilaya_totals?.length > 0 && (
             <Section title={t("stats.mapTitle")} desc={t("stats.mapDesc")}>

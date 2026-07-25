@@ -40,6 +40,7 @@ export default async function StatsPage() {
     kpis: { total_detections: 0, total_confirmed: 0, wilayas_affected: 0, total_frp: 0, active_incidents: 0, this_year: 0 },
     coverage: { first_date: null, last_date: null, current_year: null },
     by_year: [], by_month: [], top_wilayas_all: [], top_wilayas_year: [], frp_buckets: [0, 0, 0, 0, 0], wilaya_totals: [],
+    seasonal_curve: { start_doy: 152, doys: [], current_year: null, current: [], median: [], p10: [], p90: [], hist_years: [] },
   };
   return <StatsView data={data ?? fallback} />;
 }
