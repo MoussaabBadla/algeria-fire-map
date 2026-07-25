@@ -297,12 +297,13 @@ async def wilaya_summary(code: int) -> dict:
         )
         frp = await conn.fetchrow(_WILAYA_FRP_SQL, code)
 
-        # Recent confirmed incidents in this wilaya.
+        # Largest confirmed incidents on record in this wilaya (surfaces the big
+        # historical fires — e.g. the 2021 Kabylie disaster — not just recent ones).
         incidents = await conn.fetch(
             """select id, first_seen, last_seen, detection_count, max_frp, is_active
                from fire_events
                where wilaya_code = $1 and confirmed
-               order by last_seen desc limit 10""",
+               order by detection_count desc, max_frp desc nulls last limit 10""",
             code,
         )
         biggest = await conn.fetchval(

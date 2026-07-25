@@ -45,7 +45,7 @@ async def get_wilaya_stats(
     if_none_match: str | None = Header(default=None),
 ) -> Response:
     cache = get_cache()
-    key = f"stats:wilaya:{code}:v2"
+    key = f"stats:wilaya:{code}:v3"
     body = await cache.get(key)
     if body is None:
         body = json.dumps(await wilaya_summary(code), separators=(",", ":"))

@@ -146,3 +146,91 @@ async def recluster() -> dict:
             active = await conn.fetchval("select count(*) from fire_events where is_active")
 
     return {"total": int(total or 0), "active": int(active or 0)}
+
+
+# One-time (idempotent) clustering of the whole archive into historical incidents.
+# Clusters every not-yet-clustered detection within fixed time buckets, so fires
+# from different years never merge. minpoints=2 drops isolated noise pixels (they
+# stay raw, event_id NULL) so we only create real multi-detection incidents.
+async def cluster_history(bucket_days: int = 7, min_points: int = 2) -> dict:
+    settings = get_settings()
+    pool = await get_pool()
+    if pool is None:
+        return {"clustered": 0, "events_created": 0}
+
+    async with pool.acquire() as conn:
+        async with conn.transaction():
+            pending = await conn.fetchval("select count(*) from detections where event_id is null")
+            if not pending:
+                return {"clustered": 0, "events_created": 0}
+
+            # Assign every unclustered detection a global incident group number:
+            # DBSCAN within each fixed time bucket, then dense-rank across buckets.
+            await conn.execute(
+                """
+                create temp table _cl on commit drop as
+                select id, dense_rank() over (order by bucket, cl) as grp
+                from (
+                    select id,
+                           ST_ClusterDBSCAN(geom, eps => $2::float8, minpoints => $3::int)
+                               over (partition by bucket) as cl,
+                           bucket
+                    from (
+                        select id, geom,
+                               floor(extract(epoch from acq_datetime) / ($1::int * 86400))::bigint as bucket
+                        from detections
+                        where event_id is null
+                    ) s
+                ) t
+                where cl is not null
+                """,
+                bucket_days, settings.cluster_eps_deg, min_points,
+            )
+
+            # Aggregate each group into an incident, reserving a real event id per group.
+            await conn.execute(
+                """
+                create temp table _grp on commit drop as
+                select
+                    c.grp,
+                    nextval('fire_events_id_seq') as event_id,
+                    ST_Centroid(ST_Collect(d.geom)) as centroid,
+                    case when count(*) >= 3
+                              and ST_GeometryType(ST_ConvexHull(ST_Collect(d.geom))) = 'ST_Polygon'
+                         then ST_ConvexHull(ST_Collect(d.geom)) end as hull,
+                    min(d.acq_datetime) as first_seen,
+                    max(d.acq_datetime) as last_seen,
+                    count(*)::int       as detection_count,
+                    max(d.frp)          as max_frp,
+                    sum(d.frp)          as total_frp,
+                    mode() within group (order by d.wilaya_code) as wilaya_code,
+                    bool_or(d.confidence = 'high' and d.frp >= 15) as confirmed
+                from _cl c join detections d using (id)
+                group by c.grp
+                """
+            )
+
+            await conn.execute(
+                """
+                insert into fire_events
+                    (id, centroid, hull, first_seen, last_seen, detection_count,
+                     max_frp, total_frp, wilaya_code, confirmed, is_active, updated_at)
+                select event_id, centroid, hull, first_seen, last_seen, detection_count,
+                       max_frp, total_frp, wilaya_code, confirmed,
+                       (last_seen >= now() - make_interval(hours => $1::int)), now()
+                from _grp
+                """,
+                settings.event_active_hours,
+            )
+
+            await conn.execute(
+                """update detections d set event_id = g.event_id
+                   from _cl c join _grp g on g.grp = c.grp
+                   where d.id = c.id"""
+            )
+
+            events_created = await conn.fetchval("select count(*) from _grp")
+            clustered = await conn.fetchval("select count(*) from _cl")
+
+    log.info("cluster_history: %d detections → %d incidents", clustered, events_created)
+    return {"clustered": int(clustered or 0), "events_created": int(events_created or 0)}
