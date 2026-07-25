@@ -15,7 +15,7 @@ from ..stats import national_summary, wilaya_summary
 
 router = APIRouter()
 
-_CACHE_KEY = "stats:national:v3"  # v3 = + wilaya_totals (choropleth)
+_CACHE_KEY = "stats:national:v4"  # v4 = + seasonal_curve (signature chart)
 _TTL = 900  # 15 min; the underlying data changes only a few times/day
 
 

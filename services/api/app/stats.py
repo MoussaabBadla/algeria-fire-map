@@ -55,6 +55,69 @@ from detections
 """
 
 
+def _percentile(sorted_vals: list[int], p: float) -> int:
+    if not sorted_vals:
+        return 0
+    k = (len(sorted_vals) - 1) * p
+    f = int(k)
+    c = min(f + 1, len(sorted_vals) - 1)
+    return round(sorted_vals[f] + (sorted_vals[c] - sorted_vals[f]) * (k - f))
+
+
+# The "signature" chart: cumulative detections through the fire season (from
+# June 1), this year vs the historical envelope. Restricted to the summer window
+# (day-of-year 152–310) so every year — all summer-backfilled — is comparable.
+async def _seasonal_curve(conn, current_year: int | None) -> dict:
+    from collections import defaultdict
+    START, END = 152, 310
+    rows = await conn.fetch(
+        """select extract(year from acq_datetime)::int y,
+                  extract(doy  from acq_datetime)::int doy,
+                  count(*)::int c
+           from detections
+           where extract(doy from acq_datetime) between 152 and 310
+           group by 1, 2"""
+    )
+    doys = list(range(START, END + 1))
+    daily: dict[int, dict[int, int]] = defaultdict(lambda: defaultdict(int))
+    for r in rows:
+        daily[r["y"]][r["doy"]] = r["c"]
+
+    cum: dict[int, list[int]] = {}
+    for y, dd in daily.items():
+        run = 0
+        arr = []
+        for d in doys:
+            run += dd.get(d, 0)
+            arr.append(run)
+        cum[y] = arr
+
+    hist_years = sorted(y for y in cum if current_year is None or y < current_year)
+    median, p10, p90 = [], [], []
+    for i in range(len(doys)):
+        vals = sorted(cum[y][i] for y in hist_years)
+        median.append(_percentile(vals, 0.5))
+        p10.append(_percentile(vals, 0.10))
+        p90.append(_percentile(vals, 0.90))
+
+    # Current year cumulative, trimmed to the latest day with data (so it doesn't
+    # flat-line to October).
+    cur_last = max(daily.get(current_year, {}).keys(), default=START - 1) if current_year else START - 1
+    cur_len = max(0, cur_last - START + 1)
+    current = cum.get(current_year, [])[:cur_len] if current_year else []
+
+    return {
+        "start_doy": START,
+        "doys": doys,
+        "current_year": current_year,
+        "current": current,
+        "median": median,
+        "p10": p10,
+        "p90": p90,
+        "hist_years": hist_years,
+    }
+
+
 async def national_summary() -> dict:
     """All-Algeria statistics for the /stats page."""
     pool = await get_pool()
@@ -115,6 +178,8 @@ async def national_summary() -> dict:
                from stats_monthly group by wilaya_code"""
         )
 
+        curve = await _seasonal_curve(conn, cur_year)
+
     return {
         "enabled": True,
         "kpis": {
@@ -136,6 +201,7 @@ async def national_summary() -> dict:
         "top_wilayas_year": [{"code": r["code"], "name": r["name"], "name_ar": r["name_ar"], "detections": r["det"], "confirmed": r["conf"]} for r in top_year],
         "frp_buckets": [frp["b0"], frp["b1"], frp["b2"], frp["b3"], frp["b4"]],
         "wilaya_totals": [{"code": r["code"], "detections": r["det"], "confirmed": r["conf"]} for r in totals],
+        "seasonal_curve": curve,
     }
 
 
