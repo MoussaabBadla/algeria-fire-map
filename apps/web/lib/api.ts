@@ -150,6 +150,10 @@ export interface StatsData {
   frp_buckets: number[]; // [<5, 5-20, 20-50, 50-100, 100+]
   wilaya_totals: { code: number; detections: number; confirmed: number }[];
   seasonal_curve: SeasonalCurve;
+  years: number[];
+  monthly_by_year: Record<string, { det: number[]; conf: number[] }>;
+  wilaya_by_year: Record<string, [number, number, number][]>; // [code, det, conf]
+  frp_by_year: Record<string, number[]>;
 }
 
 export interface SeasonalCurve {

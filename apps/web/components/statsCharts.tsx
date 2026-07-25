@@ -50,14 +50,26 @@ export function InsightCard({ label, value, sub }: { label: string; value: strin
   );
 }
 
-export function Section({ title, desc, takeaway, children }: { title: string; desc: string; takeaway?: string; children: React.ReactNode }) {
+export function Section({ title, desc, takeaway, scope, flush, children }: { title: string; desc: string; takeaway?: string; scope?: string; flush?: boolean; children: React.ReactNode }) {
   return (
-    <section className="glass" style={{ padding: 20, borderRadius: 18, marginTop: 16 }}>
-      <h2 style={{ fontSize: 16, fontWeight: 700, margin: 0 }}>{title}</h2>
+    <section className="glass" style={{ padding: 20, borderRadius: 18, marginTop: flush ? 0 : 16, height: flush ? "100%" : undefined, boxSizing: "border-box" }}>
+      <div style={{ display: "flex", alignItems: "baseline", gap: 8, flexWrap: "wrap" }}>
+        <h2 style={{ fontSize: 16, fontWeight: 700, margin: 0 }}>{title}</h2>
+        {scope && <span style={{ fontSize: 11.5, color: ACCENT, fontWeight: 600 }}>· {scope}</span>}
+      </div>
       <p style={{ fontSize: 12.5, color: "var(--text-secondary)", margin: "4px 0 0" }}>{desc}</p>
       {takeaway && <p style={{ fontSize: 12.5, color: "#ffbf7d", margin: "8px 0 0", fontWeight: 600 }}>{takeaway}</p>}
       <div style={{ marginTop: 16 }}>{children}</div>
     </section>
+  );
+}
+
+// Responsive 2-up wrapper for a denser dashboard layout.
+export function Pair({ children }: { children: React.ReactNode }) {
+  return (
+    <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))", gap: 16, marginTop: 16 }}>
+      {children}
+    </div>
   );
 }
 
@@ -80,11 +92,12 @@ function Grid({ W, H, padT, padB, max }: { W: number; H: number; padT: number; p
 }
 
 // Seasonality: 12 monthly bars, fire-season months (>=20% of peak) highlighted.
-export function Seasonality({ byMonth, labels }: { byMonth: { month: number; detections: number }[]; labels: { inSeason: string; offSeason: string } }) {
+// `values` is Jan..Dec for the selected metric.
+export function Seasonality({ values, labels }: { values: number[]; labels: { inSeason: string; offSeason: string } }) {
   const { locale } = useLocale();
   const nf = useNum();
   const months = monthLabels(locale);
-  const counts = Array.from({ length: 12 }, (_, i) => byMonth.find((m) => m.month === i + 1)?.detections ?? 0);
+  const counts = Array.from({ length: 12 }, (_, i) => values[i] ?? 0);
   const max = Math.max(...counts, 1);
   const inSeason = new Set<number>();
   counts.forEach((c, i) => { if (c >= 0.2 * max) inSeason.add(i); });
@@ -118,31 +131,32 @@ export function Seasonality({ byMonth, labels }: { byMonth: { month: number; det
   );
 }
 
-// Yearly trend: bars + dashed average line, worst year highlighted red.
-export function Yearly({ byYear, avgLabel }: { byYear: { year: number; detections: number }[]; avgLabel: string }) {
+// Yearly trend: bars + dashed average line. `selectedYear` (optional) highlights
+// one bar; otherwise the max (worst) year is highlighted. Clicking a bar calls onPick.
+export function Yearly({ series, avgLabel, selectedYear, onPick }: { series: { year: number; value: number }[]; avgLabel: string; selectedYear?: number | null; onPick?: (year: number) => void }) {
   const nf = useNum();
   const [hover, setHover] = useState<number | null>(null);
-  if (!byYear.length) return null;
-  const max = Math.max(...byYear.map((y) => y.detections), 1);
-  const avg = byYear.reduce((a, y) => a + y.detections, 0) / byYear.length;
+  if (!series.length) return null;
+  const max = Math.max(...series.map((y) => y.value), 1);
+  const avg = series.reduce((a, y) => a + y.value, 0) / series.length;
   const W = 720, H = 260, padB = 26, padT = 18, padL = 30;
-  const bw = (W - padL) / byYear.length;
+  const bw = (W - padL) / series.length;
   const avgY = H - padB - ((H - padB - padT) * avg) / max;
   return (
     <div style={{ direction: "ltr", overflowX: "auto" }}>
       <svg viewBox={`0 0 ${W} ${H}`} width="100%" style={{ maxWidth: "100%", display: "block", minWidth: 560 }} role="img">
         <Grid W={W} H={H} padT={padT} padB={padB} max={max} />
-        {byYear.map((y, i) => {
-          const h = ((H - padB - padT) * y.detections) / max;
+        {series.map((y, i) => {
+          const h = ((H - padB - padT) * y.value) / max;
           const x = padL + i * bw + 6;
           const yy = H - padB - h;
-          const worst = y.detections === max;
+          const highlight = selectedYear != null ? y.year === selectedYear : y.value === max;
           return (
-            <g key={y.year} onMouseEnter={() => setHover(i)} onMouseLeave={() => setHover(null)}>
+            <g key={y.year} onMouseEnter={() => setHover(i)} onMouseLeave={() => setHover(null)} onClick={() => onPick?.(y.year)} style={{ cursor: onPick ? "pointer" : "default" }}>
               <rect x={padL + i * bw} y={padT} width={bw} height={H - padB - padT} fill="transparent" />
-              <rect x={x} y={yy} width={bw - 12} height={Math.max(h, 1)} rx={4} fill={worst ? "#e01e37" : ACCENT} opacity={hover === null || hover === i ? 0.92 : 0.5} />
-              <text x={padL + i * bw + bw / 2} y={H - 9} textAnchor="middle" fontSize={10.5} fill="var(--text-muted)">{y.year}</text>
-              {hover === i && <text x={padL + i * bw + bw / 2} y={yy - 6} textAnchor="middle" fontSize={12} fontWeight={700} fill="var(--text-primary)">{nf.format(y.detections)}</text>}
+              <rect x={x} y={yy} width={bw - 12} height={Math.max(h, 1)} rx={4} fill={highlight ? "#e01e37" : ACCENT} opacity={hover === null || hover === i ? 0.92 : 0.5} />
+              <text x={padL + i * bw + bw / 2} y={H - 9} textAnchor="middle" fontSize={10.5} fill={highlight ? "#fca5a5" : "var(--text-muted)"}>{y.year}</text>
+              {hover === i && <text x={padL + i * bw + bw / 2} y={yy - 6} textAnchor="middle" fontSize={12} fontWeight={700} fill="var(--text-primary)">{nf.format(y.value)}</text>}
             </g>
           );
         })}

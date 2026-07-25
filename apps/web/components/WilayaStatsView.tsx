@@ -95,11 +95,11 @@ export default function WilayaStatsView({ data }: { data: WilayaStatsData }) {
           )}
 
           <Section title={t("stats.seasonality.title")} desc={t("stats.seasonality.desc")}>
-            <Seasonality byMonth={data.by_month} labels={{ inSeason: t("stats.seasonality.inSeason"), offSeason: t("stats.seasonality.offSeason") }} />
+            <Seasonality values={Array.from({ length: 12 }, (_, i) => data.by_month.find((m) => m.month === i + 1)?.detections ?? 0)} labels={{ inSeason: t("stats.seasonality.inSeason"), offSeason: t("stats.seasonality.offSeason") }} />
           </Section>
 
           <Section title={t("stats.yearly.title")} desc={t("stats.yearly.desc")}>
-            <Yearly byYear={data.by_year} avgLabel={t("stats.yearly.average")} />
+            <Yearly series={data.by_year.map((y) => ({ year: y.year, value: y.detections }))} avgLabel={t("stats.yearly.average")} />
           </Section>
 
           <Section title={t("stats.wilaya.incidentsTitle")} desc={t("stats.wilaya.incidentsDesc")}>

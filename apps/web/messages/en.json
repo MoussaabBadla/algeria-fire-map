@@ -245,6 +245,14 @@
       "below": "{year} is running below a typical season so far.",
       "typical": "{year} is tracking a typical season so far.",
       "wellAbove": "{year} is already an exceptionally severe season."
+    },
+    "filters": {
+      "year": "Year",
+      "allYears": "All years",
+      "confirmed": "Confirmed fires",
+      "detections": "All detections",
+      "scopeAll": "all time",
+      "scopeYear": "in {year}"
     }
   }
 }

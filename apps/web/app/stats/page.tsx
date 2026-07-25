@@ -41,6 +41,7 @@ export default async function StatsPage() {
     coverage: { first_date: null, last_date: null, current_year: null },
     by_year: [], by_month: [], top_wilayas_all: [], top_wilayas_year: [], frp_buckets: [0, 0, 0, 0, 0], wilaya_totals: [],
     seasonal_curve: { start_doy: 152, doys: [], current_year: null, current: [], median: [], p10: [], p90: [], hist_years: [] },
+    years: [], monthly_by_year: {}, wilaya_by_year: {}, frp_by_year: {},
   };
   return <StatsView data={data ?? fallback} />;
 }
