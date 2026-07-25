@@ -100,30 +100,37 @@ export default function StatsView({ data }: { data: StatsData }) {
   const fmtDate = (iso: string | null) => (iso ? new Date(iso).toLocaleDateString(intlLoc(locale), { year: "numeric", month: "short" }) : "—");
   const metricUnit = metric === "confirmed" ? t("stats.filters.confirmed") : t("stats.filters.detections");
 
-  // Data derived from the active year + metric filters.
+  // Data derived from the active year + metric filters. Defensive against an
+  // older API response shape (server fetch cache can lag a deploy by ~15 min).
   const d = useMemo(() => {
     if (!data.enabled) return null;
     const yStr = String(year);
     const confMode = metric === "confirmed";
+    const monthlyByYear = data.monthly_by_year ?? {};
+    const wilayaByYear = data.wilaya_by_year ?? {};
+    const frpByYear = data.frp_by_year ?? {};
+    const wilayaTotals = data.wilaya_totals ?? [];
+    const byMonth = data.by_month ?? [];
+    const byYear = data.by_year ?? [];
     // Seasonality (12).
-    const seasonality = year === "all"
-      ? Array.from({ length: 12 }, (_, i) => { const m = data.by_month.find((x) => x.month === i + 1); return m ? (confMode ? m.confirmed : m.detections) : 0; })
-      : (data.monthly_by_year[yStr]?.[confMode ? "conf" : "det"] ?? Array(12).fill(0));
+    const seasonality: number[] = year === "all"
+      ? Array.from({ length: 12 }, (_, i) => { const m = byMonth.find((x) => x.month === i + 1); return m ? (confMode ? m.confirmed : m.detections) : 0; })
+      : (monthlyByYear[yStr]?.[confMode ? "conf" : "det"] ?? Array(12).fill(0));
     // Yearly (all years, metric).
-    const yearly = data.by_year.map((yy) => ({ year: yy.year, value: confMode ? yy.confirmed : yy.detections }));
+    const yearly = byYear.map((yy) => ({ year: yy.year, value: confMode ? yy.confirmed : yy.detections }));
     // Wilaya rows for scope.
     const src: [number, number, number][] = year === "all"
-      ? data.wilaya_totals.map((w) => [w.code, w.detections, w.confirmed])
-      : (data.wilaya_by_year[yStr] ?? []);
+      ? wilayaTotals.map((w) => [w.code, w.detections, w.confirmed])
+      : (wilayaByYear[yStr] ?? []);
     const wilayaRows = src.map(([code, det, conf]) => ({ code, value: confMode ? conf : det })).filter((r) => r.value > 0).sort((a, b) => b.value - a.value);
     const choroTotals = src.map(([code, det, conf]) => ({ code, confirmed: confMode ? conf : det }));
     // Intensity.
-    const intensity = year === "all" ? data.frp_buckets : (data.frp_by_year[yStr] ?? [0, 0, 0, 0, 0]);
+    const intensity = year === "all" ? (data.frp_buckets ?? [0, 0, 0, 0, 0]) : (frpByYear[yStr] ?? [0, 0, 0, 0, 0]);
     // KPIs.
-    const yy = year === "all" ? null : data.by_year.find((x) => x.year === year);
+    const yy = year === "all" ? null : byYear.find((x) => x.year === year);
     const kpis = year === "all"
       ? { detections: data.kpis.total_detections, confirmed: data.kpis.total_confirmed, energy: data.kpis.total_frp, wilayas: data.kpis.wilayas_affected }
-      : { detections: yy?.detections ?? 0, confirmed: yy?.confirmed ?? 0, energy: yy?.frp ?? 0, wilayas: (data.wilaya_by_year[yStr] ?? []).filter(([, det, conf]) => (confMode ? conf : det) > 0).length };
+      : { detections: yy?.detections ?? 0, confirmed: yy?.confirmed ?? 0, energy: yy?.frp ?? 0, wilayas: (wilayaByYear[yStr] ?? []).filter(([, det, conf]) => (confMode ? conf : det) > 0).length };
     // Peak month for the scope.
     const monthTotal = seasonality.reduce((a: number, b: number) => a + b, 0) || 1;
     const peakIdx = seasonality.indexOf(Math.max(...seasonality));
@@ -160,7 +167,7 @@ export default function StatsView({ data }: { data: StatsData }) {
   return (
     <div style={{ minHeight: "100vh", background: "var(--bg)", color: "var(--text-primary)" }}>
       <StatsHeader />
-      <FilterBar years={data.years} year={year} metric={metric} onYear={setYear} onMetric={setMetric} />
+      <FilterBar years={data.years ?? []} year={year} metric={metric} onYear={setYear} onMetric={setMetric} />
 
       <main style={{ padding: "clamp(16px, 4vw, 36px)" }}>
         <div style={{ maxWidth: 1080, margin: "0 auto" }}>
