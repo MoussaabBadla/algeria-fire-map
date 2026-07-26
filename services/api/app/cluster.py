@@ -152,22 +152,32 @@ async def recluster() -> dict:
 # Clusters every not-yet-clustered detection within fixed time buckets, so fires
 # from different years never merge. minpoints=2 drops isolated noise pixels (they
 # stay raw, event_id NULL) so we only create real multi-detection incidents.
-async def cluster_history(bucket_days: int = 7, min_points: int = 2) -> dict:
+async def cluster_history(bucket_days: int = 7, min_points: int = 2, year: int | None = None) -> dict:
+    """Cluster unclustered detections into historical incidents. Pass `year` to
+    scope to one calendar year (recommended — keeps each transaction small enough
+    to avoid statement timeouts on the pooler)."""
     settings = get_settings()
     pool = await get_pool()
     if pool is None:
         return {"clustered": 0, "events_created": 0}
+    T = 600  # generous per-statement timeout for these bulk ops
+    year_filter = "and extract(year from acq_datetime) = $4::int" if year is not None else ""
+    args = [bucket_days, settings.cluster_eps_deg, min_points] + ([year] if year is not None else [])
 
     async with pool.acquire() as conn:
         async with conn.transaction():
-            pending = await conn.fetchval("select count(*) from detections where event_id is null")
+            pending = await conn.fetchval(
+                "select count(*) from detections where event_id is null "
+                + ("and extract(year from acq_datetime) = $1::int" if year is not None else ""),
+                *([year] if year is not None else []), timeout=T,
+            )
             if not pending:
                 return {"clustered": 0, "events_created": 0}
 
             # Assign every unclustered detection a global incident group number:
             # DBSCAN within each fixed time bucket, then dense-rank across buckets.
             await conn.execute(
-                """
+                f"""
                 create temp table _cl on commit drop as
                 select id, dense_rank() over (order by bucket, cl) as grp
                 from (
@@ -179,12 +189,12 @@ async def cluster_history(bucket_days: int = 7, min_points: int = 2) -> dict:
                         select id, geom,
                                floor(extract(epoch from acq_datetime) / ($1::int * 86400))::bigint as bucket
                         from detections
-                        where event_id is null
+                        where event_id is null {year_filter}
                     ) s
                 ) t
                 where cl is not null
                 """,
-                bucket_days, settings.cluster_eps_deg, min_points,
+                *args, timeout=T,
             )
 
             # Aggregate each group into an incident, reserving a real event id per group.
@@ -207,7 +217,8 @@ async def cluster_history(bucket_days: int = 7, min_points: int = 2) -> dict:
                     bool_or(d.confidence = 'high' and d.frp >= 15) as confirmed
                 from _cl c join detections d using (id)
                 group by c.grp
-                """
+                """,
+                timeout=T,
             )
 
             await conn.execute(
@@ -220,17 +231,18 @@ async def cluster_history(bucket_days: int = 7, min_points: int = 2) -> dict:
                        (last_seen >= now() - make_interval(hours => $1::int)), now()
                 from _grp
                 """,
-                settings.event_active_hours,
+                settings.event_active_hours, timeout=T,
             )
 
             await conn.execute(
                 """update detections d set event_id = g.event_id
                    from _cl c join _grp g on g.grp = c.grp
-                   where d.id = c.id"""
+                   where d.id = c.id""",
+                timeout=T,
             )
 
-            events_created = await conn.fetchval("select count(*) from _grp")
-            clustered = await conn.fetchval("select count(*) from _cl")
+            events_created = await conn.fetchval("select count(*) from _grp", timeout=T)
+            clustered = await conn.fetchval("select count(*) from _cl", timeout=T)
 
     log.info("cluster_history: %d detections → %d incidents", clustered, events_created)
     return {"clustered": int(clustered or 0), "events_created": int(events_created or 0)}
