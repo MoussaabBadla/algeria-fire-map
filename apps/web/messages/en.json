@@ -102,7 +102,11 @@
     "fires": "{n} fires",
     "firesInWindow": "{n} fires · 12h window",
     "play": "Play",
-    "pause": "Pause"
+    "pause": "Pause",
+    "loading": "Loading last 5 days…",
+    "loadError": "Couldn't load replay data. Tap Replay to try again.",
+    "viewBars": "Candles",
+    "viewGraph": "Graph"
   },
   "intensity": {
     "low": "Low",

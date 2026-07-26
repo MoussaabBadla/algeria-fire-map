@@ -41,6 +41,7 @@ const PLAYBACK_TICK = 80;
 type Focus = { lng: number; lat: number; zoom: number; nonce: number } | null;
 
 export default function FireDashboard() {
+  const t = useTranslations();
   const isMobile = useIsMobile();
   const [duration, setDuration] = useState<DurationKey>("24h");
   const [styleKey, setStyleKey] = useState<MapStyleKey>("dark");
@@ -64,10 +65,14 @@ export default function FireDashboard() {
     revalidateOnFocus: false,
     keepPreviousData: true,
   });
-  const { data: historyData } = useSWR<FireCollection>(historyMode ? firesKey(HISTORY_DAYS) : null, fetchFires, {
-    revalidateOnFocus: false,
-    keepPreviousData: true,
-  });
+  const { data: historyData, isLoading: historyLoading, error: historyError } = useSWR<FireCollection>(
+    historyMode ? firesKey(HISTORY_DAYS) : null,
+    fetchFires,
+    {
+      revalidateOnFocus: false,
+      keepPreviousData: true,
+    }
+  );
   const { data: riskData } = useSWR<RiskData>(showRisk ? riskKey() : null, fetchRisk, {
     refreshInterval: 30 * 60 * 1000,
     revalidateOnFocus: false,
@@ -282,6 +287,29 @@ export default function FireDashboard() {
         ) : (
           <WilayaRanking items={ranking} onSelect={selectWilaya} isMobile onClose={() => setRankingOpen(false)} />
         ))}
+
+      {historyMode && !historyData && (
+        <div
+          className="glass animate-in"
+          role="status"
+          aria-live="polite"
+          style={{
+            position: "absolute",
+            insetInlineStart: isMobile ? 12 : 232,
+            insetInlineEnd: isMobile ? 12 : 72,
+            bottom: 16,
+            zIndex: 22,
+            padding: 14,
+            maxWidth: 720,
+            margin: "0 auto",
+            textAlign: "center",
+            color: "var(--text-secondary)",
+            fontSize: 13,
+          }}
+        >
+          {historyError ? <span style={{ color: "var(--fire-4)" }}>{t("timeline.loadError")}</span> : t("timeline.loading")}
+        </div>
+      )}
 
       {historyMode && historyData && (
         <TimelineScrubber

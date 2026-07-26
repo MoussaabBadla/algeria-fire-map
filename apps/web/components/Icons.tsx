@@ -98,3 +98,19 @@ export function ChevronDownIcon({ size = 16, color = "currentColor" }: { size?: 
     </svg>
   );
 }
+
+export function BarsIcon({ size = 15, color = "currentColor" }: { size?: number; color?: string }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" style={{ display: "block" }}>
+      <path d="M12 20V10M18 20V4M6 20v-4" />
+    </svg>
+  );
+}
+
+export function GraphIcon({ size = 15, color = "currentColor" }: { size?: number; color?: string }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" style={{ display: "block" }}>
+      <path d="M3 17l6-6 4 4 8-8" />
+    </svg>
+  );
+}
