@@ -133,21 +133,23 @@ export default function TimelineScrubber({
           onPointerUp={() => (dragging.current = false)}
           style={{ position: "relative", flex: 1, height: 44, cursor: "pointer", touchAction: "none" }}
         >
-          {/* Shaded 12h window that the fire count is computed over */}
-          <div
-            aria-hidden
-            style={{
-              position: "absolute",
-              top: 0,
-              bottom: 0,
-              left: isRtl ? `${(1 - winEndFrac) * 100}%` : `${winStartFrac * 100}%`,
-              width: `${Math.max(0, (winEndFrac - winStartFrac) * 100)}%`,
-              background: "rgba(255,150,70,0.10)",
-              borderRight: isRtl ? "none" : "1px solid rgba(255,150,70,0.35)",
-              borderLeft: isRtl ? "1px solid rgba(255,150,70,0.35)" : "none",
-              pointerEvents: "none",
-            }}
-          />
+          {/* Shaded 12h window that the fire count is computed over (candles mode only) */}
+          {view === "candles" && (
+            <div
+              aria-hidden
+              style={{
+                position: "absolute",
+                top: 0,
+                bottom: 0,
+                left: isRtl ? `${(1 - winEndFrac) * 100}%` : `${winStartFrac * 100}%`,
+                width: `${Math.max(0, (winEndFrac - winStartFrac) * 100)}%`,
+                background: "rgba(255,150,70,0.10)",
+                borderRight: isRtl ? "none" : "1px solid rgba(255,150,70,0.35)",
+                borderLeft: isRtl ? "1px solid rgba(255,150,70,0.35)" : "none",
+                pointerEvents: "none",
+              }}
+            />
+          )}
           {view === "candles" && (
             <div style={{ position: "absolute", inset: 0, display: "flex", flexDirection: isRtl ? "row-reverse" : "row", alignItems: "flex-end", gap: 1 }}>
               {series.rawNorm.map((h, i) => {
