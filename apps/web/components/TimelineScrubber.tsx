@@ -3,7 +3,7 @@
 import { useMemo, useRef, useState } from "react";
 import type { FireFeature } from "@/lib/api";
 import { formatAlgeriaTime } from "@/lib/fire";
-import { useTranslations } from "@/lib/i18n/LocaleProvider";
+import { useLocale, useTranslations } from "@/lib/i18n/LocaleProvider";
 import { BarsIcon, GraphIcon, PauseIcon, PlayIcon } from "./Icons";
 import Segmented from "./Segmented";
 
@@ -37,6 +37,8 @@ export default function TimelineScrubber({
   isMobile,
 }: Props) {
   const t = useTranslations();
+  const { locale } = useLocale();
+  const isRtl = locale === "ar";
   const trackRef = useRef<HTMLDivElement>(null);
   const dragging = useRef(false);
   const range = Math.max(1, maxTime - minTime);
@@ -82,7 +84,9 @@ export default function TimelineScrubber({
     const el = trackRef.current;
     if (!el) return;
     const r = el.getBoundingClientRect();
-    const f = Math.max(0, Math.min(1, (clientX - r.left) / r.width));
+    const rawRatio = (clientX - r.left) / r.width;
+    const ratio = isRtl ? 1 - rawRatio : rawRatio;
+    const f = Math.max(0, Math.min(1, ratio));
     onCursor(minTime + f * range);
   };
 
@@ -127,7 +131,7 @@ export default function TimelineScrubber({
           }}
           onPointerMove={(e) => dragging.current && setFromClientX(e.clientX)}
           onPointerUp={() => (dragging.current = false)}
-          style={{ position: "relative", flex: 1, height: 44, cursor: "pointer", touchAction: "none", direction: "ltr" }}
+          style={{ position: "relative", flex: 1, height: 44, cursor: "pointer", touchAction: "none" }}
         >
           {/* Shaded 12h window that the fire count is computed over */}
           <div
@@ -136,15 +140,16 @@ export default function TimelineScrubber({
               position: "absolute",
               top: 0,
               bottom: 0,
-              left: `${winStartFrac * 100}%`,
+              left: isRtl ? `${(1 - winEndFrac) * 100}%` : `${winStartFrac * 100}%`,
               width: `${Math.max(0, (winEndFrac - winStartFrac) * 100)}%`,
               background: "rgba(255,150,70,0.10)",
-              borderRight: "1px solid rgba(255,150,70,0.35)",
+              borderRight: isRtl ? "none" : "1px solid rgba(255,150,70,0.35)",
+              borderLeft: isRtl ? "1px solid rgba(255,150,70,0.35)" : "none",
               pointerEvents: "none",
             }}
           />
           {view === "candles" && (
-            <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "flex-end", gap: 1 }}>
+            <div style={{ position: "absolute", inset: 0, display: "flex", flexDirection: isRtl ? "row-reverse" : "row", alignItems: "flex-end", gap: 1 }}>
               {series.rawNorm.map((h, i) => {
                 const center = (i + 0.5) / BINS;
                 const inWindow = center >= winStartFrac && center <= winEndFrac;
@@ -164,7 +169,7 @@ export default function TimelineScrubber({
             </div>
           )}
           {view === "graph" && (
-            <svg viewBox="0 0 100 100" preserveAspectRatio="none" style={{ position: "absolute", inset: 0, width: "100%", height: "100%", pointerEvents: "none" }}>
+            <svg viewBox="0 0 100 100" preserveAspectRatio="none" style={{ position: "absolute", inset: 0, width: "100%", height: "100%", pointerEvents: "none", transform: isRtl ? "scaleX(-1)" : "none" }}>
               {(() => {
                 const pts = series.rollNorm.map((h, i) => {
                   const x = (i / (BINS - 1)) * 100;
@@ -182,7 +187,7 @@ export default function TimelineScrubber({
             </svg>
           )}
           {/* Playhead */}
-          <div style={{ position: "absolute", top: 0, bottom: 0, left: `${frac * 100}%`, width: 2, background: "#fff", transform: "translateX(-1px)", pointerEvents: "none" }}>
+          <div style={{ position: "absolute", top: 0, bottom: 0, left: isRtl ? `${(1 - frac) * 100}%` : `${frac * 100}%`, width: 2, background: "#fff", transform: "translateX(-1px)", pointerEvents: "none" }}>
             <div style={{ position: "absolute", top: -5, left: -5, width: 12, height: 12, borderRadius: "50%", background: "#fff", boxShadow: "0 0 8px rgba(255,255,255,0.6)" }} />
           </div>
         </div>
@@ -199,7 +204,7 @@ export default function TimelineScrubber({
         />
       </div>
 
-      <div style={{ display: "flex", justifyContent: "space-between", marginTop: 6, fontSize: 10, color: "var(--text-muted)", direction: "ltr" }}>
+      <div style={{ display: "flex", justifyContent: "space-between", marginTop: 6, fontSize: 10, color: "var(--text-muted)" }}>
         <span>{formatAlgeriaTime(new Date(minTime).toISOString())}</span>
         <span>{t("timeline.dragOrPlay")}</span>
         <span>{t("timeline.now")}</span>
