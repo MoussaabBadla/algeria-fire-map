@@ -289,6 +289,7 @@ export default function FireDashboard() {
           minTime={minTime}
           maxTime={maxTime}
           cursor={cursor}
+          windowMs={HISTORY_WINDOW}
           shownCount={displayed?.features.length ?? 0}
           playing={playing}
           onCursor={(t) => {

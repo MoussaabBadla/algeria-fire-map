@@ -100,6 +100,7 @@
     "dragOrPlay": "Drag or play to replay the last 5 days",
     "now": "now",
     "fires": "{n} fires",
+    "firesInWindow": "{n} fires · 12h window",
     "play": "Play",
     "pause": "Pause"
   },
