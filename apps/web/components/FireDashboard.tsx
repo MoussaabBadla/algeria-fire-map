@@ -246,6 +246,10 @@ export default function FireDashboard() {
         onStyleChange={setStyleKey}
         duration={duration}
         onDurationChange={(d) => {
+          if (historyMode) {
+            setHistoryMode(false);
+            setPlaying(false);
+          }
           setDuration(d);
           setSelected(null);
         }}

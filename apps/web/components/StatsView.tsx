@@ -91,7 +91,7 @@ function FilterBar({ years, year, metric, onYear, onMetric }: { years: number[];
 export default function StatsView({ data: initial }: { data: StatsData }) {
   // Also fetch client-side so the filters always reflect current data, even if
   // the server render came from a stale ISR/fetch cache right after a deploy.
-  const { data: fresh } = useSWR(statsKey(), fetchStats, { fallbackData: initial, revalidateOnFocus: false });
+  const { data: fresh, error: fetchError, isLoading } = useSWR(statsKey(), fetchStats, { fallbackData: initial, revalidateOnFocus: false });
   const data = fresh ?? initial;
   const t = useTranslations();
   const { locale } = useLocale();
@@ -156,10 +156,42 @@ export default function StatsView({ data: initial }: { data: StatsData }) {
   }, [data]);
 
   if (!data.enabled || !d || !allTime) {
+    const isOffline = !data.enabled;
     return (
       <div style={{ minHeight: "100vh", background: "var(--bg)", color: "var(--text-primary)" }}>
         <StatsHeader />
-        <div style={{ display: "grid", placeItems: "center", padding: 60, color: "var(--text-muted)" }}>Statistics are warming up.</div>
+        <div style={{ display: "grid", placeItems: "center", minHeight: "calc(100vh - 120px)", padding: 24, textAlign: "center" }}>
+          <div className="glass" style={{ maxWidth: 440, padding: 32, borderRadius: 20, display: "flex", flexDirection: "column", alignItems: "center", gap: 14 }}>
+            {isLoading && !isOffline ? (
+              <>
+                <div style={{ width: 36, height: 36, borderRadius: "50%", border: "3px solid rgba(255,122,26,0.2)", borderTopColor: "var(--accent)", animation: "spin 1s linear infinite" }} />
+                <span style={{ fontSize: 14, color: "var(--text-secondary)", fontWeight: 500 }}>Statistics are warming up.</span>
+              </>
+            ) : isOffline ? (
+              <>
+                <div style={{ width: 44, height: 44, borderRadius: 14, background: "rgba(255,122,26,0.12)", color: "var(--accent)", display: "grid", placeItems: "center", fontSize: 20 }}>
+                  <FlameIcon size={24} />
+                </div>
+                <div>
+                  <h3 style={{ fontSize: 16, fontWeight: 700, margin: "0 0 6px" }}>Database Service Offline</h3>
+                  <p style={{ fontSize: 13, color: "var(--text-secondary)", margin: 0, lineHeight: 1.5 }}>
+                    National &amp; historical statistics require the Supabase / PostgreSQL database. Connect a database to view long-term wildfire trends and wilaya analytics.
+                  </p>
+                </div>
+                <Link href="/" style={{ marginTop: 6, padding: "8px 18px", borderRadius: 99, background: "var(--accent)", color: "#fff", textDecoration: "none", fontSize: 12.5, fontWeight: 700 }}>
+                  {t("stats.backToMap")}
+                </Link>
+              </>
+            ) : fetchError ? (
+              <>
+                <span style={{ fontSize: 13.5, color: "#ef4444", fontWeight: 600 }}>{t("timeline.loadError")}</span>
+                <button onClick={() => window.location.reload()} style={{ padding: "6px 16px", borderRadius: 99, border: "1px solid var(--border)", background: "rgba(255,255,255,0.06)", color: "var(--text)", cursor: "pointer", fontSize: 12 }}>
+                  Retry
+                </button>
+              </>
+            ) : null}
+          </div>
+        </div>
       </div>
     );
   }

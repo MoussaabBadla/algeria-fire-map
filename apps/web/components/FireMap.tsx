@@ -214,7 +214,7 @@ export default function FireMap({ data, selected, onSelect, styleKey, isMobile, 
       source: WILAYA_SRC,
       layout: {
         "text-field": wilayaTextField(localeRef.current),
-        "text-font": ["Noto Sans Regular"],
+        "text-font": ["Open Sans Regular", "Arial Unicode MS Regular"],
         "text-size": ["interpolate", ["linear"], ["zoom"], 5, 9.5, 9, 13],
         "text-transform": "uppercase",
         "text-letter-spacing": 0.08,
