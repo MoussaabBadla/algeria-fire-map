@@ -214,7 +214,10 @@ export default function FireMap({ data, selected, onSelect, styleKey, isMobile, 
       source: WILAYA_SRC,
       layout: {
         "text-field": wilayaTextField(localeRef.current),
-        "text-font": ["Open Sans Regular", "Arial Unicode MS Regular"],
+        // Must match OpenFreeMap's served fonts (Noto Sans Regular = 200; the
+        // basemap styles use it too). Open Sans / Arial Unicode MS 404 there,
+        // which would break wilaya-label glyphs on the dark & light basemaps.
+        "text-font": ["Noto Sans Regular"],
         "text-size": ["interpolate", ["linear"], ["zoom"], 5, 9.5, 9, 13],
         "text-transform": "uppercase",
         "text-letter-spacing": 0.08,
