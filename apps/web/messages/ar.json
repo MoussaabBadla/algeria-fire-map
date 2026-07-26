@@ -72,7 +72,9 @@
     "ofHotspotsUpdated": "من أصل {total} بؤرة حرارية · آخر تحديث {time}",
     "howDetectedAria": "كيف يتم تأكيد الحرائق",
     "howDetectedTitle": "كيف يتم رصد الحرائق",
-    "howConfirmedTitle": "كيف نؤكدها"
+    "howConfirmedTitle": "كيف نؤكدها",
+    "loadingCount": "جارٍ التحميل…",
+    "wakingFeed": "جارٍ إيقاظ البث المباشر…"
   },
   "fireDetail": {
     "intensitySuffix": "شدة {level}",
@@ -98,8 +100,13 @@
     "dragOrPlay": "اسحب أو شغّل لإعادة عرض آخر 5 أيام",
     "now": "الآن",
     "fires": "{n} حريق",
+    "firesInWindow": "{n} حريق · نافذة 12 ساعة",
     "play": "تشغيل",
-    "pause": "إيقاف مؤقت"
+    "pause": "إيقاف مؤقت",
+    "loading": "جارٍ تحميل آخر 5 أيام…",
+    "loadError": "تعذّر تحميل بيانات الإعادة. اضغط إعادة للمحاولة.",
+    "viewBars": "أعمدة",
+    "viewGraph": "منحنى"
   },
   "intensity": {
     "low": "منخفضة",

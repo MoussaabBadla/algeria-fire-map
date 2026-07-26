@@ -72,7 +72,9 @@
     "ofHotspotsUpdated": "of {total} hotspots · updated {time}",
     "howDetectedAria": "How fires are confirmed",
     "howDetectedTitle": "How fires are detected",
-    "howConfirmedTitle": "How we confirm them"
+    "howConfirmedTitle": "How we confirm them",
+    "loadingCount": "loading…",
+    "wakingFeed": "waking the live feed…"
   },
   "fireDetail": {
     "intensitySuffix": "{level} intensity",
@@ -98,8 +100,13 @@
     "dragOrPlay": "Drag or play to replay the last 5 days",
     "now": "now",
     "fires": "{n} fires",
+    "firesInWindow": "{n} fires · 12h window",
     "play": "Play",
-    "pause": "Pause"
+    "pause": "Pause",
+    "loading": "Loading last 5 days…",
+    "loadError": "Couldn't load replay data. Tap Replay to try again.",
+    "viewBars": "Candles",
+    "viewGraph": "Graph"
   },
   "intensity": {
     "low": "Low",
