@@ -32,44 +32,35 @@ function compactLabel(v: number) {
 
 export function Tile({ label, value, sub, accent }: { label: string; value: React.ReactNode; sub?: string; accent?: boolean }) {
   return (
-    <div className="glass" style={{ padding: "15px 17px", borderRadius: 15, display: "flex", flexDirection: "column", gap: 3 }}>
-      <div style={{ fontSize: 10.5, textTransform: "uppercase", letterSpacing: "0.05em", color: "var(--text-muted)" }}>{label}</div>
-      <div style={{ fontSize: 26, fontWeight: 800, color: accent ? ACCENT : "var(--text-primary)", lineHeight: 1.1 }}>{value}</div>
-      {sub && <div style={{ fontSize: 11.5, color: "var(--text-secondary)" }}>{sub}</div>}
+    <div className="panel" style={{ padding: "14px 16px", display: "flex", flexDirection: "column", gap: 4 }}>
+      <div style={{ fontSize: 12, color: "var(--text-secondary)" }}>{label}</div>
+      <div style={{ fontSize: 27, fontWeight: 700, color: accent ? ACCENT : "var(--text-primary)", lineHeight: 1.05, fontVariantNumeric: "tabular-nums" }}>{value}</div>
+      {sub && <div style={{ fontSize: 11.5, color: "var(--text-muted)" }}>{sub}</div>}
     </div>
   );
 }
 
 export function InsightCard({ label, value, sub }: { label: string; value: string; sub: string }) {
   return (
-    <div className="glass" style={{ padding: "14px 16px", borderRadius: 14 }}>
-      <div style={{ fontSize: 10.5, textTransform: "uppercase", letterSpacing: "0.05em", color: ACCENT, fontWeight: 700 }}>{label}</div>
-      <div style={{ fontSize: 20, fontWeight: 800, margin: "3px 0", lineHeight: 1.15 }}>{value}</div>
-      <div style={{ fontSize: 11.5, color: "var(--text-secondary)" }}>{sub}</div>
+    <div className="panel" style={{ padding: "14px 16px", display: "flex", flexDirection: "column", gap: 4 }}>
+      <div style={{ fontSize: 12, color: "var(--text-secondary)" }}>{label}</div>
+      <div style={{ fontSize: 19, fontWeight: 700, lineHeight: 1.15 }}>{value}</div>
+      <div style={{ fontSize: 11.5, color: "var(--text-muted)" }}>{sub}</div>
     </div>
   );
 }
 
-export function Section({ title, desc, takeaway, scope, flush, children }: { title: string; desc: string; takeaway?: string; scope?: string; flush?: boolean; children: React.ReactNode }) {
+export function Section({ title, desc, takeaway, scope, flush, className, children }: { title: string; desc: string; takeaway?: string; scope?: string; flush?: boolean; className?: string; children: React.ReactNode }) {
   return (
-    <section className="glass" style={{ padding: 20, borderRadius: 18, marginTop: flush ? 0 : 16, height: flush ? "100%" : undefined, boxSizing: "border-box" }}>
+    <section className={`panel${className ? ` ${className}` : ""}`} style={{ padding: 20, marginTop: flush ? 0 : 14, height: "100%", boxSizing: "border-box" }}>
       <div style={{ display: "flex", alignItems: "baseline", gap: 8, flexWrap: "wrap" }}>
-        <h2 style={{ fontSize: 16, fontWeight: 700, margin: 0 }}>{title}</h2>
-        {scope && <span style={{ fontSize: 11.5, color: ACCENT, fontWeight: 600 }}>· {scope}</span>}
+        <h2 style={{ fontSize: 15.5, fontWeight: 700, margin: 0, letterSpacing: "-0.01em" }}>{title}</h2>
+        {scope && <span style={{ fontSize: 11.5, color: "var(--text-muted)", fontWeight: 500 }}>· {scope}</span>}
       </div>
       <p style={{ fontSize: 12.5, color: "var(--text-secondary)", margin: "4px 0 0" }}>{desc}</p>
-      {takeaway && <p style={{ fontSize: 12.5, color: "#ffbf7d", margin: "8px 0 0", fontWeight: 600 }}>{takeaway}</p>}
+      {takeaway && <p style={{ fontSize: 12.5, color: "var(--text-secondary)", margin: "8px 0 0" }}>{takeaway}</p>}
       <div style={{ marginTop: 16 }}>{children}</div>
     </section>
-  );
-}
-
-// Responsive 2-up wrapper for a denser dashboard layout.
-export function Pair({ children }: { children: React.ReactNode }) {
-  return (
-    <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))", gap: 16, marginTop: 16 }}>
-      {children}
-    </div>
   );
 }
 

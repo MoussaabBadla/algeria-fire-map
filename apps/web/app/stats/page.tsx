@@ -4,7 +4,7 @@ import type { StatsData } from "@/lib/api";
 
 // TEMP: stats can point at a different backend via NEXT_PUBLIC_STATS_API_URL
 // (falls back to the main API). Remove that env var to revert.
-const API_URL = process.env.NEXT_PUBLIC_STATS_API_URL ?? process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
+const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
 
 // ISR: regenerate at most every 15 min (data changes only a few times/day).
 export const revalidate = 900;

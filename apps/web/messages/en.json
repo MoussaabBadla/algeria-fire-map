@@ -252,7 +252,8 @@
       "confirmed": "Confirmed fires",
       "detections": "All detections",
       "scopeAll": "all time",
-      "scopeYear": "in {year}"
+      "scopeYear": "in {year}",
+      "byWilaya": "Jump to a wilaya…"
     }
   }
 }

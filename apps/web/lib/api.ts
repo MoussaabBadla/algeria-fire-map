@@ -6,7 +6,7 @@ export const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000
 // TEMP override: stats endpoints can point at a different backend (e.g. Railway
 // with historical data) while the rest of the app stays on the local API.
 // Remove NEXT_PUBLIC_STATS_API_URL from the env to revert.
-export const STATS_API_URL = process.env.NEXT_PUBLIC_STATS_API_URL ?? API_URL;
+export const STATS_API_URL = API_URL;
 
 export type Confidence = "low" | "nominal" | "high";
 

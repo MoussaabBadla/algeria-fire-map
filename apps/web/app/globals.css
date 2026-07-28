@@ -152,23 +152,36 @@ html[dir="rtl"] .panel-in { animation-name: slideInLeft; }
 ::-webkit-scrollbar { width: 8px; height: 8px; }
 ::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.14); border-radius: 8px; }
 
-/* ===== Stats dashboard grids ===== */
+/* ===== Stats dashboard ===== */
+/* Flat surface for dashboard tiles — a solid card with a hairline border, no
+   blur or drop shadow. Reads as a dense data panel, not a floating glass card. */
+.panel {
+  background: var(--surface-solid);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+}
+
+/* 12-column bento. Everything is full-width by default (mobile-first); on wider
+   viewports children opt into a span via .c-N so the grid reads intentionally
+   (asymmetric splits) instead of equal auto-fit halves. */
+.stats-dash {
+  display: grid;
+  gap: 14px;
+  align-items: start;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+}
+.stats-dash > * { grid-column: 1 / -1; min-width: 0; }
+@media (min-width: 900px) {
+  .stats-dash > .c-5 { grid-column: span 5; }
+  .stats-dash > .c-6 { grid-column: span 6; }
+  .stats-dash > .c-7 { grid-column: span 7; }
+}
+
 /* min(Npx,100%) keeps a single track from overflowing on narrow phones. */
 .stats-kpi {
   display: grid;
   gap: 11px;
-  grid-template-columns: repeat(auto-fit, minmax(min(148px, 100%), 1fr));
-}
-.stats-insights {
-  display: grid;
-  gap: 11px;
-  grid-template-columns: repeat(auto-fit, minmax(min(160px, 100%), 1fr));
-}
-.stats-charts {
-  display: grid;
-  gap: 14px;
-  align-items: start;
-  grid-template-columns: repeat(auto-fit, minmax(min(440px, 100%), 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(150px, 100%), 1fr));
 }
 .stats-metho {
   display: grid;
