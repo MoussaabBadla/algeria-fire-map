@@ -250,7 +250,7 @@ export default function StatsView({ data: initial }: { data: StatsData }) {
               <span style={{ color: "var(--text-muted)", fontSize: 18 }}>{methoOpen ? "−" : "+"}</span>
             </button>
             {methoOpen && (
-              <ul style={{ margin: "14px 0 0", padding: 0, listStyle: "none", display: "flex", flexDirection: "column", gap: 10 }}>
+              <ul className="stats-metho" style={{ margin: "14px 0 0", padding: 0, listStyle: "none" }}>
                 {["b1", "b2", "b3", "b4", "b5", "b6"].map((b) => (
                   <li key={b} style={{ fontSize: 12.5, color: "var(--text-secondary)", lineHeight: 1.55, paddingInlineStart: 14, borderInlineStart: `2px solid var(--border)` }}>{t(`stats.methodology.${b}`)}</li>
                 ))}

@@ -151,3 +151,32 @@ html[dir="rtl"] .panel-in { animation-name: slideInLeft; }
 /* Scrollbars */
 ::-webkit-scrollbar { width: 8px; height: 8px; }
 ::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.14); border-radius: 8px; }
+
+/* ===== Stats dashboard grids ===== */
+/* min(Npx,100%) keeps a single track from overflowing on narrow phones. */
+.stats-kpi {
+  display: grid;
+  gap: 11px;
+  grid-template-columns: repeat(auto-fit, minmax(min(148px, 100%), 1fr));
+}
+.stats-insights {
+  display: grid;
+  gap: 11px;
+  grid-template-columns: repeat(auto-fit, minmax(min(160px, 100%), 1fr));
+}
+.stats-charts {
+  display: grid;
+  gap: 14px;
+  align-items: start;
+  grid-template-columns: repeat(auto-fit, minmax(min(440px, 100%), 1fr));
+}
+.stats-metho {
+  display: grid;
+  gap: 10px 24px;
+  grid-template-columns: repeat(auto-fit, minmax(min(280px, 100%), 1fr));
+}
+/* In a 2-column phone grid, a lone trailing tile (odd count) spans the full
+   width instead of leaving an empty half. */
+@media (max-width: 560px) {
+  .stats-kpi > :last-child:nth-child(odd) { grid-column: 1 / -1; }
+}

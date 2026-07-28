@@ -30,7 +30,7 @@ function compactLabel(v: number) {
   return String(v);
 }
 
-export function Tile({ label, value, sub, accent }: { label: string; value: string; sub?: string; accent?: boolean }) {
+export function Tile({ label, value, sub, accent }: { label: string; value: React.ReactNode; sub?: string; accent?: boolean }) {
   return (
     <div className="glass" style={{ padding: "15px 17px", borderRadius: 15, display: "flex", flexDirection: "column", gap: 3 }}>
       <div style={{ fontSize: 10.5, textTransform: "uppercase", letterSpacing: "0.05em", color: "var(--text-muted)" }}>{label}</div>
@@ -42,8 +42,8 @@ export function Tile({ label, value, sub, accent }: { label: string; value: stri
 
 export function InsightCard({ label, value, sub }: { label: string; value: string; sub: string }) {
   return (
-    <div className="glass" style={{ padding: "14px 16px", borderRadius: 14, borderInlineStart: `3px solid ${ACCENT}` }}>
-      <div style={{ fontSize: 10.5, textTransform: "uppercase", letterSpacing: "0.05em", color: "var(--text-muted)" }}>{label}</div>
+    <div className="glass" style={{ padding: "14px 16px", borderRadius: 14 }}>
+      <div style={{ fontSize: 10.5, textTransform: "uppercase", letterSpacing: "0.05em", color: ACCENT, fontWeight: 700 }}>{label}</div>
       <div style={{ fontSize: 20, fontWeight: 800, margin: "3px 0", lineHeight: 1.15 }}>{value}</div>
       <div style={{ fontSize: 11.5, color: "var(--text-secondary)" }}>{sub}</div>
     </div>
@@ -106,7 +106,7 @@ export function Seasonality({ values, labels }: { values: number[]; labels: { in
   const bw = (W - padL) / 12;
   return (
     <div style={{ direction: "ltr", overflowX: "auto" }}>
-      <svg viewBox={`0 0 ${W} ${H}`} width="100%" style={{ maxWidth: "100%", display: "block", minWidth: 560 }} role="img">
+      <svg viewBox={`0 0 ${W} ${H}`} width="100%" style={{ maxWidth: "100%", display: "block", minWidth: 440 }} role="img">
         <Grid W={W} H={H} padT={padT} padB={padB} max={max} />
         {counts.map((c, i) => {
           const h = ((H - padB - padT) * c) / max;
@@ -144,7 +144,7 @@ export function Yearly({ series, avgLabel, selectedYear, onPick }: { series: { y
   const avgY = H - padB - ((H - padB - padT) * avg) / max;
   return (
     <div style={{ direction: "ltr", overflowX: "auto" }}>
-      <svg viewBox={`0 0 ${W} ${H}`} width="100%" style={{ maxWidth: "100%", display: "block", minWidth: 560 }} role="img">
+      <svg viewBox={`0 0 ${W} ${H}`} width="100%" style={{ maxWidth: "100%", display: "block", minWidth: 440 }} role="img">
         <Grid W={W} H={H} padT={padT} padB={padB} max={max} />
         {series.map((y, i) => {
           const h = ((H - padB - padT) * y.value) / max;
@@ -224,7 +224,7 @@ export function Intensity({ buckets, unit }: { buckets: number[]; unit: string }
   const bw = (W - padL) / buckets.length;
   return (
     <div style={{ direction: "ltr", overflowX: "auto" }}>
-      <svg viewBox={`0 0 ${W} ${H}`} width="100%" style={{ maxWidth: "100%", display: "block", minWidth: 520 }} role="img">
+      <svg viewBox={`0 0 ${W} ${H}`} width="100%" style={{ maxWidth: "100%", display: "block", minWidth: 400 }} role="img">
         <Grid W={W} H={H} padT={padT} padB={padB} max={max} />
         {buckets.map((c, i) => {
           const h = ((H - padB - padT) * c) / max;
