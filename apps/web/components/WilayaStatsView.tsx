@@ -66,13 +66,16 @@ export default function WilayaStatsView({ data }: { data: WilayaStatsData }) {
           <h1 style={{ fontSize: "clamp(22px, 4vw, 30px)", fontWeight: 800, margin: "8px 0 0", letterSpacing: "-0.02em" }}>{name}</h1>
           <p style={{ fontSize: 13.5, color: "var(--text-secondary)", margin: "6px 0 0" }}>{t("stats.wilaya.subtitle", { name })}</p>
 
-          <p style={{ fontSize: 13.5, color: "var(--text-secondary)", margin: "10px 0 0", lineHeight: 1.55, maxWidth: 680 }}>
-            {worst
-              ? t("stats.wilaya.insight", { name, rank: k.rank, total: k.ranked_total, pct: nf.format(k.share_pct), year: worst.year })
-              : t("stats.wilaya.insightNoWorst", { name, rank: k.rank, total: k.ranked_total, pct: nf.format(k.share_pct) })}
-          </p>
+          <div className="glass" style={{ marginTop: 16, padding: "16px 18px", borderRadius: 16, borderInlineStart: `4px solid ${ACCENT}` }}>
+            <div style={{ fontSize: 10.5, textTransform: "uppercase", letterSpacing: "0.06em", color: ACCENT, fontWeight: 700 }}>{t("stats.insightLead")}</div>
+            <p style={{ fontSize: 15, margin: "5px 0 0", lineHeight: 1.5, fontWeight: 500 }}>
+              {worst
+                ? t("stats.wilaya.insight", { name, rank: k.rank, total: k.ranked_total, pct: nf.format(k.share_pct), year: worst.year })
+                : t("stats.wilaya.insightNoWorst", { name, rank: k.rank, total: k.ranked_total, pct: nf.format(k.share_pct) })}
+            </p>
+          </div>
 
-          <div className="stats-kpi" style={{ marginTop: 18 }}>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(148px, 1fr))", gap: 11, marginTop: 16 }}>
             <Tile label={t("stats.kpi.confirmed")} value={nf.format(k.confirmed)} accent />
             <Tile label={t("stats.kpi.detections")} value={nf.format(k.detections)} />
             <Tile label={t("stats.wilaya.rankLabel")} value={t("stats.wilaya.rankValue", { rank: k.rank, total: k.ranked_total })} />
@@ -80,7 +83,7 @@ export default function WilayaStatsView({ data }: { data: WilayaStatsData }) {
             {k.biggest_frp != null && <Tile label={t("stats.wilaya.biggestLabel")} value={`${nf.format(k.biggest_frp)} MW`} />}
           </div>
 
-          <div className="stats-kpi" style={{ marginTop: 12 }}>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))", gap: 11, marginTop: 11 }}>
             {peak && <InsightCard label={t("stats.peakLabel")} value={mLong[peak.month - 1]} sub={t("stats.seasonality.inSeason")} />}
             {worst && <InsightCard label={t("stats.worstLabel")} value={String(worst.year)} sub={`${nf.format(worst.detections)} ${t("stats.terms.detections")}`} />}
           </div>

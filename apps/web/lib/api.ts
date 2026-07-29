@@ -3,11 +3,6 @@
 
 export const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
 
-// TEMP override: stats endpoints can point at a different backend (e.g. Railway
-// with historical data) while the rest of the app stays on the local API.
-// Remove NEXT_PUBLIC_STATS_API_URL from the env to revert.
-export const STATS_API_URL = API_URL;
-
 export type Confidence = "low" | "nominal" | "high";
 
 export interface FireProperties {
@@ -173,7 +168,7 @@ export interface SeasonalCurve {
 }
 
 export function statsKey(): string {
-  return `${STATS_API_URL}/stats`;
+  return `${API_URL}/stats`;
 }
 
 export async function fetchStats(url: string): Promise<StatsData> {
@@ -214,7 +209,7 @@ export interface WilayaStatsData {
 
 export async function fetchWilayaStats(code: number): Promise<WilayaStatsData | null> {
   try {
-    const res = await fetch(`${STATS_API_URL}/stats/wilaya/${code}`, { next: { revalidate: 900 } });
+    const res = await fetch(`${API_URL}/stats/wilaya/${code}`, { next: { revalidate: 900 } });
     if (!res.ok) return null;
     return (await res.json()) as WilayaStatsData;
   } catch {
