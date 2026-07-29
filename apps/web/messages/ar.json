@@ -259,7 +259,8 @@
       "confirmed": "الحرائق المؤكدة",
       "detections": "كل الرصدات",
       "scopeAll": "كل الفترة",
-      "scopeYear": "في {year}"
+      "scopeYear": "في {year}",
+      "byWilaya": "انتقل إلى ولاية…"
     }
   }
 }

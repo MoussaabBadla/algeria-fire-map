@@ -23,3 +23,11 @@ export function wilayaName(code: number, locale: Locale): string {
   if (!w) return "";
   return locale === "ar" ? w.name_ar || w.name : w.name;
 }
+
+// All wilayas as `{ code, name }`, localised and sorted by display name so a
+// picker lists them alphabetically in the active locale.
+export function allWilayas(locale: Locale): { code: number; name: string }[] {
+  return Array.from(BY_CODE.keys())
+    .map((code) => ({ code, name: wilayaName(code, locale) }))
+    .sort((a, b) => a.name.localeCompare(b.name, locale === "ar" ? "ar" : "en"));
+}

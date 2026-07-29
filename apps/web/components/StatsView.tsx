@@ -3,15 +3,16 @@
 import { useMemo, useState } from "react";
 import Link from "next/link";
 import dynamic from "next/dynamic";
+import { useRouter } from "next/navigation";
 import useSWR from "swr";
 import { statsKey, fetchStats, type StatsData } from "@/lib/api";
 import { useLocale, useTranslations } from "@/lib/i18n/LocaleProvider";
-import { wilayaName } from "@/lib/i18n/wilayaNames";
+import { wilayaName, allWilayas } from "@/lib/i18n/wilayaNames";
 import LanguageSwitcher from "./LanguageSwitcher";
 import NavMenu from "./NavMenu";
 import { FlameIcon } from "./Icons";
 import {
-  ACCENT, Section, Pair, Tile, InsightCard, Seasonality, Yearly, Intensity, SignatureCurve,
+  ACCENT, Section, Tile, InsightCard, Seasonality, Yearly, Intensity, SignatureCurve,
   useNum, monthLabels, compact, intlLoc,
 } from "./statsCharts";
 
@@ -61,23 +62,57 @@ export function StatsHeader() {
   );
 }
 
-// Sticky year + metric filter bar.
+// A native <select> styled to match the dark glass theme. Native controls give
+// the best mobile UX (OS wheel picker) and keep the bar responsive when the
+// wilaya list is long.
+function FilterSelect({ value, onChange, ariaLabel, children, grow }: { value: string; onChange: (v: string) => void; ariaLabel: string; children: React.ReactNode; grow?: boolean }) {
+  const { locale } = useLocale();
+  const caret = locale === "ar" ? "left 10px center" : "right 10px center";
+  return (
+    <select
+      aria-label={ariaLabel}
+      value={value}
+      onChange={(e) => onChange(e.target.value)}
+      style={{
+        appearance: "none", WebkitAppearance: "none", MozAppearance: "none", colorScheme: "dark",
+        padding: locale === "ar" ? "9px 14px 9px 34px" : "9px 34px 9px 14px",
+        borderRadius: 10, border: "1px solid var(--border)", background: "var(--surface-solid)",
+        color: "var(--text-primary)", fontSize: 14, fontWeight: 600, cursor: "pointer", lineHeight: 1.2,
+        minWidth: 0, flex: grow ? "1 1 200px" : "0 0 auto", maxWidth: "100%",
+        backgroundImage: "url(\"data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%238a8f98' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'><polyline points='6 9 12 15 18 9'/></svg>\")",
+        backgroundRepeat: "no-repeat", backgroundPosition: caret,
+      }}
+    >
+      {children}
+    </select>
+  );
+}
+
+// Sticky year + wilaya + metric filter bar.
 function FilterBar({ years, year, metric, onYear, onMetric }: { years: number[]; year: YearSel; metric: Metric; onYear: (y: YearSel) => void; onMetric: (m: Metric) => void }) {
   const t = useTranslations();
-  const pill = (active: boolean): React.CSSProperties => ({
-    padding: "6px 12px", borderRadius: 9, border: `1px solid ${active ? "rgba(255,122,26,0.5)" : "var(--border)"}`,
-    background: active ? "rgba(255,122,26,0.16)" : "rgba(255,255,255,0.03)", color: active ? "#ff9e3d" : "var(--text-secondary)",
-    fontSize: 12.5, fontWeight: 600, cursor: "pointer", whiteSpace: "nowrap", flexShrink: 0,
-  });
+  const { locale } = useLocale();
+  const router = useRouter();
+  const wilayas = useMemo(() => allWilayas(locale), [locale]);
   return (
-    <div className="glass" style={{ position: "sticky", top: 54, zIndex: 39, borderRadius: 0, borderInline: "none", padding: "9px clamp(14px, 4vw, 28px)", display: "flex", alignItems: "center", gap: 14, flexWrap: "wrap" }}>
-      <div style={{ display: "flex", gap: 6, overflowX: "auto", flex: 1, minWidth: 0, paddingBottom: 2 }}>
-        <button style={pill(year === "all")} onClick={() => onYear("all")}>{t("stats.filters.allYears")}</button>
+    <div className="glass" style={{ position: "sticky", top: 54, zIndex: 39, borderRadius: 0, borderInline: "none", padding: "9px clamp(14px, 4vw, 28px)", display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+      {/* Year — a select so a long span of years stays compact on mobile. */}
+      <FilterSelect ariaLabel={t("stats.filters.year")} value={String(year)} onChange={(v) => onYear(v === "all" ? "all" : Number(v))}>
+        <option value="all">{t("stats.filters.allYears")}</option>
         {years.map((y) => (
-          <button key={y} style={pill(year === y)} onClick={() => onYear(y)}>{y}</button>
+          <option key={y} value={y}>{y}</option>
         ))}
-      </div>
-      <div style={{ display: "flex", gap: 3, padding: 3, background: "rgba(255,255,255,0.06)", borderRadius: 10, flexShrink: 0 }}>
+      </FilterSelect>
+
+      {/* Wilaya — selecting one navigates to that wilaya's dedicated stats. */}
+      <FilterSelect grow ariaLabel={t("stats.filters.byWilaya")} value="" onChange={(v) => { if (v) router.push(`/stats/${v}`); }}>
+        <option value="">{t("stats.filters.byWilaya")}</option>
+        {wilayas.map((w) => (
+          <option key={w.code} value={w.code}>{w.name}</option>
+        ))}
+      </FilterSelect>
+
+      <div style={{ display: "flex", gap: 3, padding: 3, background: "rgba(255,255,255,0.06)", borderRadius: 10, flexShrink: 0, marginInlineStart: "auto" }}>
         {(["confirmed", "detections"] as Metric[]).map((m) => (
           <button key={m} onClick={() => onMetric(m)} style={{ padding: "6px 10px", borderRadius: 7, border: "none", cursor: "pointer", fontSize: 12, fontWeight: 600, background: metric === m ? "rgba(255,255,255,0.16)" : "transparent", color: metric === m ? "#fff" : "var(--text-secondary)" }}>
             {t(`stats.filters.${m}`)}
@@ -196,7 +231,6 @@ export default function StatsView({ data: initial }: { data: StatsData }) {
     );
   }
 
-  const startYear = data.coverage.first_date?.slice(0, 4) ?? "";
   const scope = year === "all" ? t("stats.filters.scopeAll") : t("stats.filters.scopeYear", { year });
   const seasonRange = d.seasonMonths.length ? `${mShort[d.seasonMonths[0]]} – ${mShort[d.seasonMonths[d.seasonMonths.length - 1]]}` : "—";
   const sc = data.seasonal_curve;
@@ -206,14 +240,14 @@ export default function StatsView({ data: initial }: { data: StatsData }) {
       <StatsHeader />
       <FilterBar years={data.years ?? []} year={year} metric={metric} onYear={setYear} onMetric={setMetric} />
 
-      <main style={{ padding: "clamp(16px, 4vw, 36px)" }}>
-        <div style={{ maxWidth: 1080, margin: "0 auto" }}>
+      <main style={{ padding: "clamp(16px, 4vw, 32px)" }}>
+        <div style={{ maxWidth: 1320, margin: "0 auto" }}>
           <h1 style={{ fontSize: "clamp(22px, 4vw, 30px)", fontWeight: 800, margin: 0, letterSpacing: "-0.02em" }}>{t("stats.title")}</h1>
           <p style={{ fontSize: 13.5, color: "var(--text-secondary)", margin: "6px 0 0", maxWidth: 640 }}>{t("stats.subtitle")}</p>
           <div style={{ fontSize: 12, color: "var(--text-muted)", marginTop: 6 }}>{t("stats.coverage", { first: fmtDate(data.coverage.first_date), last: fmtDate(data.coverage.last_date) })}</div>
 
-          {/* KPI row (year + metric aware) */}
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))", gap: 11, marginTop: 16 }}>
+          {/* KPI + headline stat row (year + metric aware) */}
+          <div className="stats-kpi" style={{ marginTop: 18 }}>
             <Tile label={t("stats.kpi.confirmed")} value={nf.format(d.kpis.confirmed)} sub={scope} accent />
             <Tile label={t("stats.kpi.detections")} value={nf.format(d.kpis.detections)} sub={scope} />
             <Tile label={t("stats.kpi.wilayas")} value={`${nf.format(d.kpis.wilayas)} / 69`} />
@@ -221,34 +255,28 @@ export default function StatsView({ data: initial }: { data: StatsData }) {
             {year === "all" && <Tile label={t("stats.kpi.incidents")} value={nf.format(data.kpis.active_incidents)} />}
           </div>
 
-          {/* All-time headline insight */}
-          <div className="glass" style={{ marginTop: 16, padding: "16px 18px", borderRadius: 16, borderInlineStart: `4px solid ${ACCENT}` }}>
-            <div style={{ fontSize: 10.5, textTransform: "uppercase", letterSpacing: "0.06em", color: ACCENT, fontWeight: 700 }}>{t("stats.insightLead")}</div>
-            <p style={{ fontSize: 15, margin: "5px 0 0", lineHeight: 1.5, fontWeight: 500 }}>{t("stats.insight", { month: mLong[allTime.peakMonth - 1], pct: nf.format(allTime.peakPct), year: startYear })}</p>
-          </div>
-
-          {/* Insight cards */}
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))", gap: 11, marginTop: 11 }}>
+          {/* Derived insight tiles */}
+          <div className="stats-kpi" style={{ marginTop: 12 }}>
             <InsightCard label={t("stats.peakLabel")} value={mLong[d.peakIdx]} sub={`${nf.format(d.peakPct)}% ${scope}`} />
             <InsightCard label={t("stats.seasonLabel")} value={seasonRange} sub={t("stats.seasonality.inSeason")} />
             {allTime.worst && <InsightCard label={t("stats.worstLabel")} value={String(allTime.worst.year)} sub={t("stats.vsAvg", { mult: nf.format(allTime.mult) })} />}
           </div>
 
-          {/* Signature curve (always multi-year) */}
-          {sc?.current?.length > 1 && (() => {
-            const i = sc.current.length - 1;
-            const cur = sc.current[i], med = sc.median[i] || 1, hi = sc.p90[i];
-            const key = cur > hi ? "wellAbove" : cur > med * 1.15 ? "above" : cur < med * 0.85 ? "below" : "typical";
-            return (
-              <Section title={t("stats.signature.title")} desc={t("stats.signature.desc")} takeaway={t(`stats.signature.${key}`, { year: sc.current_year ?? "" })}>
-                <SignatureCurve curve={sc} labels={{ thisYear: t("stats.signature.thisYear"), median: t("stats.signature.median"), band: t("stats.signature.band") }} />
-              </Section>
-            );
-          })()}
+          {/* Dashboard bento grid */}
+          <div className="stats-dash" style={{ marginTop: 14 }}>
+            {/* Signature curve — full width (always multi-year) */}
+            {sc?.current?.length > 1 && (() => {
+              const i = sc.current.length - 1;
+              const cur = sc.current[i], med = sc.median[i] || 1, hi = sc.p90[i];
+              const key = cur > hi ? "wellAbove" : cur > med * 1.15 ? "above" : cur < med * 0.85 ? "below" : "typical";
+              return (
+                <Section flush title={t("stats.signature.title")} desc={t("stats.signature.desc")} takeaway={t(`stats.signature.${key}`, { year: sc.current_year ?? "" })}>
+                  <SignatureCurve curve={sc} labels={{ thisYear: t("stats.signature.thisYear"), median: t("stats.signature.median"), band: t("stats.signature.band") }} />
+                </Section>
+              );
+            })()}
 
-          {/* Choropleth + ranked wilayas side by side */}
-          <Pair>
-            <Section flush title={t("stats.mapTitle")} desc={t("stats.mapDesc")} scope={scope}>
+            <Section flush className="c-7" title={t("stats.mapTitle")} desc={t("stats.mapDesc")} scope={scope}>
               <NationalChoropleth totals={d.choroTotals} unit={metricUnit} />
               <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 10, fontSize: 11, color: "var(--text-secondary)" }}>
                 <span>{t("stats.mapLow")}</span>
@@ -256,39 +284,36 @@ export default function StatsView({ data: initial }: { data: StatsData }) {
                 <span>{t("stats.mapHigh")}</span>
               </div>
             </Section>
-            <Section flush title={t("stats.topWilayas.title")} desc={t("stats.topWilayas.desc")} scope={scope}>
+            <Section flush className="c-5" title={t("stats.topWilayas.title")} desc={t("stats.topWilayas.desc")} scope={scope}>
               <TopWilayas rows={d.wilayaRows} unit={metricUnit} />
             </Section>
-          </Pair>
 
-          {/* Seasonality + yearly side by side */}
-          <Pair>
-            <Section flush title={t("stats.seasonality.title")} desc={t("stats.seasonality.desc")} scope={scope} takeaway={t("stats.peakTakeaway", { month: mLong[d.peakIdx], pct: nf.format(d.peakPct) })}>
+            <Section flush className="c-6" title={t("stats.seasonality.title")} desc={t("stats.seasonality.desc")} scope={scope} takeaway={t("stats.peakTakeaway", { month: mLong[d.peakIdx], pct: nf.format(d.peakPct) })}>
               <Seasonality values={d.seasonality} labels={{ inSeason: t("stats.seasonality.inSeason"), offSeason: t("stats.seasonality.offSeason") }} />
             </Section>
-            <Section flush title={t("stats.yearly.title")} desc={t("stats.yearly.desc")} takeaway={allTime.worst ? t("stats.yearTakeaway", { year: allTime.worst.year, mult: nf.format(allTime.mult) }) : undefined}>
+            <Section flush className="c-6" title={t("stats.yearly.title")} desc={t("stats.yearly.desc")} takeaway={allTime.worst ? t("stats.yearTakeaway", { year: allTime.worst.year, mult: nf.format(allTime.mult) }) : undefined}>
               <Yearly series={d.yearly} avgLabel={t("stats.yearly.average")} selectedYear={year === "all" ? null : year} onPick={(y) => setYear(y)} />
             </Section>
-          </Pair>
 
-          <Section title={t("stats.intensity.title")} desc={t("stats.intensity.desc")} scope={scope} takeaway={t("stats.intensityTakeaway", { pct: nf.format(Math.round(((d.intensity[3] + d.intensity[4]) / (d.intensity.reduce((a: number, b: number) => a + b, 0) || 1)) * 100)) })}>
-            <Intensity buckets={d.intensity} unit={t("stats.intensity.unit")} />
-          </Section>
+            <Section flush title={t("stats.intensity.title")} desc={t("stats.intensity.desc")} scope={scope} takeaway={t("stats.intensityTakeaway", { pct: nf.format(Math.round(((d.intensity[3] + d.intensity[4]) / (d.intensity.reduce((a: number, b: number) => a + b, 0) || 1)) * 100)) })}>
+              <Intensity buckets={d.intensity} unit={t("stats.intensity.unit")} />
+            </Section>
 
-          {/* Methodology */}
-          <section className="glass" style={{ padding: 20, borderRadius: 18, marginTop: 16 }}>
-            <button onClick={() => setMethoOpen((v) => !v)} style={{ all: "unset", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "space-between", width: "100%" }}>
-              <h2 style={{ fontSize: 15, fontWeight: 700, margin: 0 }}>{t("stats.methodology.title")}</h2>
-              <span style={{ color: "var(--text-muted)", fontSize: 18 }}>{methoOpen ? "−" : "+"}</span>
-            </button>
-            {methoOpen && (
-              <ul style={{ margin: "14px 0 0", padding: 0, listStyle: "none", display: "flex", flexDirection: "column", gap: 10 }}>
-                {["b1", "b2", "b3", "b4", "b5", "b6"].map((b) => (
-                  <li key={b} style={{ fontSize: 12.5, color: "var(--text-secondary)", lineHeight: 1.55, paddingInlineStart: 14, borderInlineStart: `2px solid var(--border)` }}>{t(`stats.methodology.${b}`)}</li>
-                ))}
-              </ul>
-            )}
-          </section>
+            {/* Methodology */}
+            <section className="panel" style={{ padding: 20 }}>
+              <button onClick={() => setMethoOpen((v) => !v)} style={{ all: "unset", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "space-between", width: "100%" }}>
+                <h2 style={{ fontSize: 15, fontWeight: 700, margin: 0 }}>{t("stats.methodology.title")}</h2>
+                <span style={{ color: "var(--text-muted)", fontSize: 18 }}>{methoOpen ? "−" : "+"}</span>
+              </button>
+              {methoOpen && (
+                <ul className="stats-metho" style={{ margin: "14px 0 0", padding: 0, listStyle: "none" }}>
+                  {["b1", "b2", "b3", "b4", "b5", "b6"].map((b) => (
+                    <li key={b} style={{ fontSize: 12.5, color: "var(--text-secondary)", lineHeight: 1.55, paddingInlineStart: 14, borderInlineStart: `2px solid var(--border)` }}>{t(`stats.methodology.${b}`)}</li>
+                  ))}
+                </ul>
+              )}
+            </section>
+          </div>
 
           <div style={{ marginTop: 22, textAlign: "center", fontSize: 12, color: "var(--text-muted)" }}>
             <Link href="/" style={{ color: "var(--text-secondary)", textDecoration: "none" }}>{t("stats.backToMap")}</Link>
