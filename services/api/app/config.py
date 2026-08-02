@@ -68,6 +68,20 @@ class Settings(BaseSettings):
     # --- Fires endpoint cache TTL (seconds). FIRMS NRT updates only a few times/day. ---
     fires_cache_ttl: int = 600
 
+    # --- ML grid (grid_cells) ---
+    # Regular 0.1° (~11 km) grid over fire-prone NORTHERN Algeria, clipped to the
+    # border polygon. Each (cell, day) is one future training sample. The Sahara
+    # is excluded via the latitude cutoff (its FIRMS hits are mostly gas flares),
+    # so the model never learns from trivial desert non-fires.
+    grid_step_deg: float = 0.1
+    # Southern cutoff (°N): keep only cells whose centre is at/above this latitude.
+    # ~34°N ≈ the Tell Atlas / high-plateau fire belt. Border clip handles E/W/N.
+    grid_south_lat: float = 34.0
+    # West/East/North extent scanned before clipping (matches the fires AOI bbox).
+    grid_west_lng: float = -8.7
+    grid_east_lng: float = 12.0
+    grid_north_lat: float = 37.1
+
     @property
     def cors_origin_list(self) -> list[str]:
         return [o.strip() for o in self.cors_origins.split(",") if o.strip()]

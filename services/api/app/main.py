@@ -14,6 +14,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from .config import get_settings
 from .db import close_pool, db_healthy
+from .grid import seed_grid
 from .ingest import ingest_once, shutdown_scheduler, start_scheduler
 from .routers import events, fires, place, risk, stats
 
@@ -74,3 +75,14 @@ async def admin_ingest(x_admin_token: str | None = Header(default=None)) -> dict
         # Never leave a live ingest-enabled deploy with an unprotected trigger.
         raise HTTPException(status_code=403, detail="ADMIN_TOKEN not configured")
     return await ingest_once()
+
+
+@app.post("/admin/seed-grid", tags=["meta"])
+async def admin_seed_grid(x_admin_token: str | None = Header(default=None)) -> dict:
+    """Seed the ML training grid (grid_cells). Idempotent. Guarded like /admin/ingest."""
+    if settings.admin_token:
+        if x_admin_token != settings.admin_token:
+            raise HTTPException(status_code=401, detail="invalid admin token")
+    elif settings.ingest_enabled:
+        raise HTTPException(status_code=403, detail="ADMIN_TOKEN not configured")
+    return await seed_grid()
