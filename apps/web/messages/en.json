@@ -58,6 +58,8 @@
     "directions": "Directions",
     "go": "Go",
     "helper": "Tap a place to find it on the map, or Go for directions to help.",
+    "filterWilaya": "Filter by wilaya",
+    "allWilayas": "All wilayas ({n})",
     "population": "Population",
     "people": "{n} people",
     "metres": "{n} m",

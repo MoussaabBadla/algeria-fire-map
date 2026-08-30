@@ -1,5 +1,6 @@
 "use client";
 
+import { useMemo, useState } from "react";
 import type { AtRiskCommunity, AtRiskData } from "@/lib/api";
 import { useLocale, useTranslations } from "@/lib/i18n/LocaleProvider";
 import { CloseIcon, DirectionsIcon } from "./Icons";
@@ -30,9 +31,28 @@ export default function AtRiskPanel({ data, onSelect, isMobile, onClose }: Props
   const ar = locale === "ar";
 
   const communities = data?.communities ?? [];
-  const counts = data?.counts;
   const fmtDist = (m: number) => (m < 1000 ? t("atRisk.metres", { n: Math.round(m) }) : t("atRisk.km", { n: (m / 1000).toFixed(1) }));
   const fmtNum = (n: number) => n.toLocaleString(ar ? "ar-DZ" : "en-US");
+
+  // Wilaya filter — only the wilayas that actually appear, most-affected first.
+  const [wilaya, setWilaya] = useState<number | "all">("all");
+  const wilayaOptions = useMemo(() => {
+    const m = new Map<number, { code: number; name: string; count: number }>();
+    for (const c of communities) {
+      if (c.wilaya_code == null) continue;
+      const name = (ar ? c.wilaya_name_ar : c.wilaya_name) || String(c.wilaya_code);
+      const e = m.get(c.wilaya_code) ?? { code: c.wilaya_code, name, count: 0 };
+      e.count += 1;
+      m.set(c.wilaya_code, e);
+    }
+    return [...m.values()].sort((a, b) => b.count - a.count);
+  }, [communities, ar]);
+
+  // If a filter is set but that wilaya is gone (data refreshed), fall back to all.
+  const activeWilaya = wilaya !== "all" && wilayaOptions.some((w) => w.code === wilaya) ? wilaya : "all";
+  const shown = activeWilaya === "all" ? communities : communities.filter((c) => c.wilaya_code === activeWilaya);
+  const counts = { severe: 0, immediate: 0, warning: 0, total: shown.length };
+  for (const c of shown) counts[c.tier] += 1;
 
   const shell: React.CSSProperties = isMobile
     ? { position: "absolute", insetInlineStart: 8, insetInlineEnd: 8, maxWidth: 560, marginInline: "auto", top: "calc(env(safe-area-inset-top) + 78px)", bottom: "calc(env(safe-area-inset-bottom) + 12px)", zIndex: 21, padding: 14, display: "flex", flexDirection: "column" }
@@ -58,11 +78,26 @@ export default function AtRiskPanel({ data, onSelect, isMobile, onClose }: Props
         )}
       </div>
 
-      {/* Tier counts: severe / immediate / warning */}
+      {/* Wilaya filter — only the affected wilayas (most affected first). */}
+      {wilayaOptions.length > 1 && (
+        <select
+          value={activeWilaya}
+          onChange={(e) => setWilaya(e.target.value === "all" ? "all" : Number(e.target.value))}
+          aria-label={t("atRisk.filterWilaya")}
+          style={{ width: "100%", marginBottom: 10, padding: isMobile ? "11px 12px" : "9px 11px", borderRadius: 10, border: "1px solid var(--border)", background: "var(--surface-hover)", color: "var(--text)", fontSize: isMobile ? 14 : 13, fontWeight: 600, cursor: "pointer" }}
+        >
+          <option value="all">{t("atRisk.allWilayas", { n: communities.length })}</option>
+          {wilayaOptions.map((w) => (
+            <option key={w.code} value={w.code}>{`${w.name} (${w.count})`}</option>
+          ))}
+        </select>
+      )}
+
+      {/* Tier counts: severe / immediate / warning (for the current filter) */}
       <div style={{ display: "flex", gap: 7, marginBottom: 10 }}>
-        {card(TIER_COLOR.severe, counts?.severe ?? 0, t("atRisk.severe"))}
-        {card(TIER_COLOR.immediate, counts?.immediate ?? 0, t("atRisk.immediate"))}
-        {card(TIER_COLOR.warning, counts?.warning ?? 0, t("atRisk.warning"))}
+        {card(TIER_COLOR.severe, counts.severe, t("atRisk.severe"))}
+        {card(TIER_COLOR.immediate, counts.immediate, t("atRisk.immediate"))}
+        {card(TIER_COLOR.warning, counts.warning, t("atRisk.warning"))}
       </div>
 
       {communities.length > 0 && (
@@ -80,7 +115,7 @@ export default function AtRiskPanel({ data, onSelect, isMobile, onClose }: Props
         </div>
       ) : (
         <div style={{ overflowY: "auto", margin: "0 -4px", flex: 1, WebkitOverflowScrolling: "touch" }}>
-          {communities.map((c) => {
+          {shown.map((c) => {
             const color = TIER_COLOR[c.tier];
             const wilaya = (ar ? c.wilaya_name_ar : c.wilaya_name) || "";
             return (
