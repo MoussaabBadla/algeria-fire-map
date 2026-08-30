@@ -48,7 +48,7 @@
     "title": "Communities at risk",
     "immediate": "Immediate",
     "warning": "Warning",
-    "none": "No inhabited places are near a confirmed fire in the last 24 hours.",
+    "none": "No inhabited places are near a confirmed fire in the last 4 days.",
     "nearestFire": "Nearest fire",
     "firesNearby": "Fires nearby",
     "population": "Population",

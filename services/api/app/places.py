@@ -185,10 +185,12 @@ order by nearest_m
 
 
 async def communities_at_risk(
-    immediate_m: int = 3000, warning_m: int = 10000, window_hours: int = 24
+    immediate_m: int = 3000, warning_m: int = 10000, window_hours: int = 96
 ) -> dict:
     """Inhabited places within `warning_m` of a confirmed fire in the last
-    `window_hours`, tiered 'immediate' (<= immediate_m) vs 'warning'."""
+    `window_hours` (default 4 days — surfaces recently-affected communities that
+    still need help, not only those next to a currently-active fire), tiered
+    'immediate' (<= immediate_m) vs 'warning'."""
     from datetime import datetime, timezone
 
     pool = await get_pool()
