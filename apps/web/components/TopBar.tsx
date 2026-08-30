@@ -164,7 +164,9 @@ export default function TopBar(props: Props) {
           </div>
         </div>
 
-        {!historyMode && (
+        {/* While the Communities-at-risk panel is open the whole screen is that
+            focused list — hide the busy controls dock so it's simple to read. */}
+        {!historyMode && !showAtRisk && (
           <div className="glass animate-in" style={{ position: "absolute", insetInlineStart: 12, insetInlineEnd: 12, maxWidth: 640, marginInline: "auto", bottom: "calc(12px + env(safe-area-inset-bottom))", zIndex: 20, padding: 12, display: "flex", flexDirection: "column", gap: 8 }}>
             {showRisk ? <RiskLegend horizontal /> : <InlineLegend t={t} />}
             <Segmented options={durationOpts} value={duration} onChange={onDurationChange} big />

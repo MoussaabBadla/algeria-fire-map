@@ -56,6 +56,8 @@
     "passesOverDays": "{hits} passes over {days} days",
     "firePower": "Fire power on site",
     "directions": "Directions",
+    "go": "Go",
+    "helper": "Tap a place to find it on the map, or Go for directions to help.",
     "population": "Population",
     "people": "{n} people",
     "metres": "{n} m",

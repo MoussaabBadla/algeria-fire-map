@@ -35,7 +35,7 @@ export default function AtRiskPanel({ data, onSelect, isMobile, onClose }: Props
   const fmtNum = (n: number) => n.toLocaleString(ar ? "ar-DZ" : "en-US");
 
   const shell: React.CSSProperties = isMobile
-    ? { position: "absolute", insetInlineStart: 8, insetInlineEnd: 8, maxWidth: 560, marginInline: "auto", top: "calc(env(safe-area-inset-top) + 78px)", bottom: "calc(env(safe-area-inset-bottom) + 88px)", zIndex: 21, padding: 14, display: "flex", flexDirection: "column" }
+    ? { position: "absolute", insetInlineStart: 8, insetInlineEnd: 8, maxWidth: 560, marginInline: "auto", top: "calc(env(safe-area-inset-top) + 78px)", bottom: "calc(env(safe-area-inset-bottom) + 12px)", zIndex: 21, padding: 14, display: "flex", flexDirection: "column" }
     : { position: "absolute", top: 16, insetInlineEnd: 16, zIndex: 19, padding: 16, width: 300, maxHeight: "calc(100vh - 32px)", display: "flex", flexDirection: "column" };
 
   const card = (color: string, n: number, label: string) => (
@@ -65,6 +65,15 @@ export default function AtRiskPanel({ data, onSelect, isMobile, onClose }: Props
         {card(TIER_COLOR.warning, counts?.warning ?? 0, t("atRisk.warning"))}
       </div>
 
+      {communities.length > 0 && (
+        <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 11.5, color: "var(--text-secondary)", marginBottom: 8, lineHeight: 1.4 }}>
+          <span style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", width: 20, height: 20, borderRadius: 6, background: "var(--accent)", flexShrink: 0 }}>
+            <DirectionsIcon size={12} color="#fff" />
+          </span>
+          {t("atRisk.helper")}
+        </div>
+      )}
+
       {communities.length === 0 ? (
         <div style={{ fontSize: 12.5, color: "var(--text-secondary)", padding: "10px 0", lineHeight: 1.5 }}>
           {t("atRisk.none")}
@@ -73,27 +82,25 @@ export default function AtRiskPanel({ data, onSelect, isMobile, onClose }: Props
         <div style={{ overflowY: "auto", margin: "0 -4px", flex: 1, WebkitOverflowScrolling: "touch" }}>
           {communities.map((c) => {
             const color = TIER_COLOR[c.tier];
-            const sub = [(ar ? c.wilaya_name_ar : c.wilaya_name) || "", c.population ? t("atRisk.people", { n: fmtNum(c.population) }) : ""].filter(Boolean).join(" · ");
+            const wilaya = (ar ? c.wilaya_name_ar : c.wilaya_name) || "";
             return (
-              <div key={c.id} style={{ display: "flex", alignItems: "stretch", borderTop: "1px solid var(--border)", borderInlineStart: `2px solid ${color}`, background: c.tier === "severe" ? `${color}0f` : "transparent" }}>
+              <div key={c.id} style={{ display: "flex", alignItems: "stretch", gap: 8, borderTop: "1px solid var(--border)", borderInlineStart: `3px solid ${color}`, background: c.tier === "severe" ? `${color}12` : "transparent" }}>
                 <button
                   onClick={() => onSelect(c)}
-                  style={{ flex: 1, minWidth: 0, textAlign: "start", background: "none", border: "none", cursor: "pointer", padding: isMobile ? "10px 8px" : "8px" }}
+                  style={{ flex: 1, minWidth: 0, textAlign: "start", background: "none", border: "none", cursor: "pointer", padding: isMobile ? "11px 6px 11px 10px" : "8px 4px 8px 8px" }}
                 >
                   <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                    <span style={{ fontSize: 13, color: "var(--text)", fontWeight: 600, flex: 1, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                    <span style={{ fontSize: isMobile ? 14.5 : 13, color: "var(--text)", fontWeight: 600, flex: 1, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                       {displayName(c, locale)}
                     </span>
                     <span style={{ fontSize: 12, fontWeight: 700, color, fontVariantNumeric: "tabular-nums", flexShrink: 0 }}>
                       {c.tier === "severe" ? `${Math.round(c.on_frp)} MW` : fmtDist(c.nearest_fire_m)}
                     </span>
                   </div>
-                  <div style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 2, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                    {c.tier === "severe" ? (
-                      <span style={{ color }}>{t("atRisk.passesOverDays", { hits: c.on_hits, days: c.on_days })}{sub ? ` · ${sub}` : ""}</span>
-                    ) : (
-                      sub
-                    )}
+                  {/* Wilaya name under the community, small — plus population when known. */}
+                  <div style={{ fontSize: 11.5, color: "var(--text-muted)", marginTop: 3, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                    {wilaya}
+                    {c.population ? ` · ${t("atRisk.people", { n: fmtNum(c.population) })}` : ""}
                   </div>
                 </button>
                 <a
@@ -102,9 +109,10 @@ export default function AtRiskPanel({ data, onSelect, isMobile, onClose }: Props
                   rel="noopener noreferrer"
                   aria-label={t("atRisk.directions")}
                   onClick={(e) => e.stopPropagation()}
-                  style={{ display: "grid", placeItems: "center", width: isMobile ? 48 : 40, flexShrink: 0, color, textDecoration: "none", borderInlineStart: "1px solid var(--border)" }}
+                  style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 2, alignSelf: "center", width: isMobile ? 62 : 52, minHeight: isMobile ? 46 : 40, margin: isMobile ? "5px 6px 5px 0" : "4px 4px 4px 0", flexShrink: 0, color: "#fff", background: color, borderRadius: 10, textDecoration: "none" }}
                 >
-                  <DirectionsIcon size={16} />
+                  <DirectionsIcon size={16} color="#fff" />
+                  <span style={{ fontSize: 9, fontWeight: 700, lineHeight: 1 }}>{t("atRisk.go")}</span>
                 </a>
               </div>
             );

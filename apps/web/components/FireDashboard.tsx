@@ -337,7 +337,7 @@ export default function FireDashboard() {
           <WilayaRanking items={ranking} onSelect={selectWilaya} isMobile={false} />
         ))}
       {isMobile && atRiskOpen && showAtRisk && (
-        <AtRiskPanel data={atRiskData} onSelect={selectAtRisk} isMobile onClose={() => setAtRiskOpen(false)} />
+        <AtRiskPanel data={atRiskData} onSelect={selectAtRisk} isMobile onClose={toggleAtRisk} />
       )}
       {isMobile && rankingOpen && !showAtRisk &&
         (showRisk ? (
