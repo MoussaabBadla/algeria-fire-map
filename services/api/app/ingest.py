@@ -7,6 +7,7 @@ Ingest is the only writer to the DB; the map endpoints stay read-only.
 from __future__ import annotations
 
 import logging
+from datetime import datetime, timezone
 
 from .cluster import recluster
 from .config import get_settings
@@ -17,10 +18,19 @@ from .stats import refresh_stats
 log = logging.getLogger("ingest")
 
 _scheduler = None
+# Last successful cycle, surfaced by /health as a scheduler-liveness signal.
+# None until the first cycle completes; if it stops advancing, ingestion stalled.
+_last_ingest: dict | None = None
+
+
+def get_last_ingest() -> dict | None:
+    """The most recent successful ingest cycle (or None), for /health."""
+    return _last_ingest
 
 
 async def ingest_once() -> dict:
     """One ingest cycle: fetch → upsert detections → recluster events."""
+    global _last_ingest
     settings = get_settings()
     pool = await get_pool()
     if pool is None:
@@ -34,6 +44,12 @@ async def ingest_once() -> dict:
     events = await recluster()
     await refresh_stats()
     log.info("ingest: fetched=%d upserted=%d active_events=%d", len(features), upserted, events.get("active", 0))
+    _last_ingest = {
+        "at": datetime.now(timezone.utc).isoformat(),
+        "fetched": len(features),
+        "upserted": upserted,
+        "active_events": events.get("active", 0),
+    }
     return {"ok": True, "fetched": len(features), "upserted": upserted, **events}
 
 
@@ -56,7 +72,12 @@ def start_scheduler() -> None:
         id="firms_ingest",
         max_instances=1,
         coalesce=True,
-        next_run_time=None,  # first real run happens after one interval; kick a manual run at startup
+        # Run once at startup, then every interval. NOTE: passing next_run_time=None
+        # here adds the job PAUSED (APScheduler only auto-computes a first fire time
+        # when the attribute is absent, not when it is None) — that silently disabled
+        # ingestion. An explicit start time both fixes the pause and kicks an
+        # immediate first run so a fresh deploy doesn't wait a full interval.
+        next_run_time=datetime.now(timezone.utc),
     )
     _scheduler.start()
     log.info("ingest scheduler started (every %ds)", settings.ingest_interval_seconds)
