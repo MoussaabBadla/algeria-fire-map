@@ -22,19 +22,31 @@ from .firms import _in_algeria
 
 logger = logging.getLogger(__name__)
 
-# Overpass: every inhabited place node in Algeria (admin_level=2 country area),
-# restricted to named settlements. Mirrors are tried in order (Overpass is flaky).
-_OVERPASS_QUERY = """
-[out:json][timeout:300];
-area["ISO3166-1"="DZ"][admin_level=2]->.dz;
-node["place"~"^(city|town|village|hamlet)$"]["name"](area.dz);
-out body;
-"""
+# Overpass: inhabited place nodes in Algeria (admin_level=2 country area). Queried
+# ONE place type at a time — the combined city|town|village|hamlet body query is
+# too heavy and 504s server-side, but each type (village ~5.6k, hamlet ~4k) returns
+# fine (~25s) and ~87% carry a clean name:ar. Mirrors tried in order (flaky).
+_PLACE_TYPES = ("city", "town", "village", "hamlet")
+
+
+def _overpass_query(place_type: str) -> str:
+    return (
+        '[out:json][timeout:180];'
+        'area["ISO3166-1"="DZ"][admin_level=2]->.dz;'
+        f'node["place"="{place_type}"]["name"](area.dz);'
+        "out body;"
+    )
 _OVERPASS_MIRRORS = (
     "https://overpass-api.de/api/interpreter",
+    "https://overpass.private.coffee/api/interpreter",
     "https://overpass.kumi.systems/api/interpreter",
     "https://maps.mail.ru/osm/tools/overpass/api/interpreter",
 )
+# Overpass etiquette requires an identifying User-Agent; without one some mirrors
+# (overpass-api.de) reject the request with 406 Not Acceptable.
+_OVERPASS_HEADERS = {
+    "User-Agent": "algeria-fire-map/1.0 (wildfire monitoring; https://github.com/MoussaabBadla/algeria-fire-map)"
+}
 
 _ENSURE_SCHEMA = """
 create extension if not exists postgis;
@@ -83,18 +95,28 @@ def _to_int(v) -> int | None:
 
 
 async def _fetch_overpass() -> list[dict]:
-    """Query Overpass for Algeria's place nodes, trying mirrors in order."""
+    """Query Overpass for Algeria's place nodes, one type at a time (with mirror
+    fallback per type). Tolerates a single type failing — partial data beats none."""
+    elements: list[dict] = []
     last_err: Exception | None = None
-    async with httpx.AsyncClient(timeout=300.0) as client:
-        for url in _OVERPASS_MIRRORS:
-            try:
-                resp = await client.post(url, data={"data": _OVERPASS_QUERY})
-                resp.raise_for_status()
-                return resp.json().get("elements", [])
-            except (httpx.HTTPError, ValueError) as e:  # network or bad JSON
-                logger.warning("overpass mirror failed (%s): %s", url, e)
-                last_err = e
-    raise RuntimeError(f"all Overpass mirrors failed: {last_err}")
+    async with httpx.AsyncClient(timeout=240.0, headers=_OVERPASS_HEADERS) as client:
+        for pt in _PLACE_TYPES:
+            got: list[dict] | None = None
+            for url in _OVERPASS_MIRRORS:
+                try:
+                    resp = await client.post(url, data={"data": _overpass_query(pt)})
+                    resp.raise_for_status()
+                    got = resp.json().get("elements", [])
+                    break
+                except (httpx.HTTPError, ValueError) as e:  # network or bad JSON
+                    logger.warning("overpass %s @ %s failed: %s", pt, url, e)
+                    last_err = e
+            if got is not None:
+                logger.info("overpass %s: %d nodes", pt, len(got))
+                elements.extend(got)
+    if not elements:
+        raise RuntimeError(f"all Overpass requests failed: {last_err}")
+    return elements
 
 
 async def seed_places() -> dict:
