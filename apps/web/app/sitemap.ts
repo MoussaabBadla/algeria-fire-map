@@ -20,6 +20,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
       lastModified: now,
       changeFrequency: "daily",
       priority: 0.8,
+      alternates: { languages: { ar: `${SITE_URL}/stats`, fr: `${SITE_URL}/stats`, en: `${SITE_URL}/stats` } },
     },
     // One indexable page per wilaya (SEO: "wildfire statistics <wilaya>").
     ...WILAYA_CODES.map((code) => ({
@@ -27,6 +28,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
       lastModified: now,
       changeFrequency: "daily" as const,
       priority: 0.6,
+      alternates: { languages: { ar: `${SITE_URL}/stats/${code}`, fr: `${SITE_URL}/stats/${code}`, en: `${SITE_URL}/stats/${code}` } },
     })),
   ];
 }

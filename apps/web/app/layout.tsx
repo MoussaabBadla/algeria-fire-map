@@ -69,21 +69,82 @@ export const viewport: Viewport = {
   viewportFit: "cover",
 };
 
+const REPO_URL = "https://github.com/MoussaabBadla/algeria-fire-map";
+const OG_IMAGE = `${SITE_URL}/opengraph-image`;
+
+// Structured data as a linked @graph — additive over the previous single
+// WebApplication node: adds WebSite, an author/publisher entity, and a Dataset
+// (Google Dataset Search) describing the FIRMS-derived fire data.
 const JSON_LD = {
   "@context": "https://schema.org",
-  "@type": "WebApplication",
-  name: "Algeria Fire Map",
-  alternateName: ["خريطة حرائق الجزائر", "Carte des feux de forêt en Algérie"],
-  url: SITE_URL,
-  applicationCategory: "https://schema.org/GovernmentApplication",
-  operatingSystem: "Web",
-  inLanguage: ["ar", "fr", "en"],
-  description: DESCRIPTION,
-  isAccessibleForFree: true,
-  author: { "@type": "Person", name: "Moussaab Badla", url: "https://github.com/MoussaabBadla" },
-  offers: { "@type": "Offer", price: "0", priceCurrency: "USD" },
-  about: { "@type": "Thing", name: "Wildfire monitoring in Algeria" },
-  areaServed: { "@type": "Country", name: "Algeria" },
+  "@graph": [
+    {
+      "@type": "WebSite",
+      "@id": `${SITE_URL}/#website`,
+      url: SITE_URL,
+      name: "Algeria Fire Map",
+      alternateName: ["خريطة حرائق الجزائر", "Carte des feux de forêt en Algérie"],
+      description: DESCRIPTION,
+      inLanguage: ["ar", "fr", "en"],
+      publisher: { "@id": `${SITE_URL}/#author` },
+    },
+    {
+      "@type": "Person",
+      "@id": `${SITE_URL}/#author`,
+      name: "Moussaab Badla",
+      url: "https://github.com/MoussaabBadla",
+      sameAs: ["https://github.com/MoussaabBadla"],
+    },
+    {
+      "@type": "WebApplication",
+      "@id": `${SITE_URL}/#app`,
+      name: "Algeria Fire Map",
+      alternateName: ["خريطة حرائق الجزائر", "Carte des feux de forêt en Algérie"],
+      url: SITE_URL,
+      applicationCategory: "https://schema.org/GovernmentApplication",
+      operatingSystem: "Web",
+      browserRequirements: "Requires JavaScript",
+      inLanguage: ["ar", "fr", "en"],
+      description: DESCRIPTION,
+      isAccessibleForFree: true,
+      author: { "@id": `${SITE_URL}/#author` },
+      publisher: { "@id": `${SITE_URL}/#author` },
+      image: OG_IMAGE,
+      screenshot: OG_IMAGE,
+      offers: { "@type": "Offer", price: "0", priceCurrency: "USD" },
+      featureList: [
+        "Live NASA FIRMS wildfire detections",
+        "Fire intensity (FRP) with a confirmed-fire filter",
+        "Per-wilaya fire-risk (FWI) with a 3-day forecast",
+        "Wildfire statistics and history by wilaya",
+        "Communities near active fires",
+      ],
+      sameAs: [REPO_URL],
+      about: { "@type": "Thing", name: "Wildfire monitoring in Algeria" },
+      areaServed: { "@type": "Country", name: "Algeria" },
+    },
+    {
+      "@type": "Dataset",
+      "@id": `${SITE_URL}/#dataset`,
+      name: "Algeria wildfire detections and fire-risk",
+      description:
+        "Near real-time active-fire detections (NASA FIRMS VIIRS & MODIS) and fire-weather risk (FWI) across Algeria, updated hourly and aggregated by wilaya.",
+      url: SITE_URL,
+      inLanguage: ["ar", "fr", "en"],
+      isAccessibleForFree: true,
+      license: "https://opensource.org/licenses/MIT",
+      creator: { "@id": `${SITE_URL}/#author` },
+      isBasedOn: "https://firms.modaps.eosdis.nasa.gov/",
+      keywords: ["wildfire", "Algeria", "NASA FIRMS", "VIIRS", "MODIS", "fire risk", "FWI", "forest fire"],
+      temporalCoverage: "2001-06-04/..",
+      variableMeasured: ["active fire detections", "fire radiative power", "fire weather index"],
+      spatialCoverage: {
+        "@type": "Place",
+        name: "Algeria",
+        geo: { "@type": "GeoShape", box: "18.9 -8.7 37.1 12.0" },
+      },
+    },
+  ],
 };
 
 export default async function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {

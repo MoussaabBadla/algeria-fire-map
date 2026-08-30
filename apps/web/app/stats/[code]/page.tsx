@@ -6,6 +6,8 @@ import wilayasData from "@/lib/wilayas.json";
 
 export const revalidate = 900;
 
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "https://www.algeriafiremap.site";
+
 interface WProps { code: number; name: string; name_ar: string }
 const BY_CODE = new Map<number, WProps>(
   (wilayasData as unknown as { features: { properties: WProps }[] }).features.map((f) => [f.properties.code, f.properties])
@@ -37,5 +39,19 @@ export default async function WilayaStatsPage({ params }: { params: Promise<{ co
     kpis: { detections: 0, confirmed: 0, this_year: 0, rank: 0, ranked_total: 0, share_pct: 0, biggest_frp: null },
     coverage: { current_year: null }, by_year: [], by_month: [], frp_buckets: [0, 0, 0, 0, 0], incidents: [],
   };
-  return <WilayaStatsView data={data ?? fallback} />;
+  const breadcrumb = {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    itemListElement: [
+      { "@type": "ListItem", position: 1, name: "Algeria Fire Map", item: SITE_URL },
+      { "@type": "ListItem", position: 2, name: "Statistics", item: `${SITE_URL}/stats` },
+      { "@type": "ListItem", position: 3, name: `${BY_CODE.get(num)!.name} wildfire statistics`, item: `${SITE_URL}/stats/${num}` },
+    ],
+  };
+  return (
+    <>
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumb) }} />
+      <WilayaStatsView data={data ?? fallback} />
+    </>
+  );
 }

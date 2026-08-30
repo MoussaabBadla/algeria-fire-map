@@ -3,6 +3,7 @@ import StatsView from "@/components/StatsView";
 import type { StatsData } from "@/lib/api";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "https://www.algeriafiremap.site";
 
 // ISR: regenerate at most every 15 min (data changes only a few times/day).
 export const revalidate = 900;
@@ -43,5 +44,18 @@ export default async function StatsPage() {
     seasonal_curve: { start_doy: 152, doys: [], current_year: null, current: [], median: [], p10: [], p90: [], hist_years: [] },
     years: [], monthly_by_year: {}, wilaya_by_year: {}, frp_by_year: {},
   };
-  return <StatsView data={data ?? fallback} />;
+  const breadcrumb = {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    itemListElement: [
+      { "@type": "ListItem", position: 1, name: "Algeria Fire Map", item: SITE_URL },
+      { "@type": "ListItem", position: 2, name: "Wildfire Statistics", item: `${SITE_URL}/stats` },
+    ],
+  };
+  return (
+    <>
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumb) }} />
+      <StatsView data={data ?? fallback} />
+    </>
+  );
 }
