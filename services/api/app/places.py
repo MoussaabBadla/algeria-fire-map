@@ -158,39 +158,69 @@ async def seed_places() -> dict:
     return {"fetched": len(rows), "seeded": seeded, "total": int(after)}
 
 
-# Settlements near a recent fire, tiered by distance. The join prefilters with a
-# geometry ST_DWithin (~16 km, uses the GiST index), then HAVING keeps only those
-# within the warning radius by exact geodesic distance.
+# Settlements near a recent fire. The join prefilters with a geometry ST_DWithin
+# (~16 km, uses the GiST index), computes the exact geodesic distance per (place,
+# fire) pair, then aggregates. Besides proximity we compute the ON-SETTLEMENT
+# signal: fires whose pixel fell inside the settlement's built-up footprint (a
+# radius scaled by place type, since a VIIRS pixel is 375 m and a settlement has
+# real extent) — that is the "the fire actually reached the village" evidence used
+# to flag likely-damaged communities.
 _AT_RISK_SQL = """
 with fires as (
-    select geom, frp
+    select geom, frp, acq_datetime::date as d
     from detections
     where confidence = 'high' and frp >= 15
       and acq_datetime >= now() - make_interval(hours => $2::int)
+),
+pf as (
+    select
+        p.id,
+        ST_Distance(p.geom::geography, f.geom::geography) as dist,
+        f.frp, f.d,
+        case p.place_type
+            when 'city' then 3000 when 'town' then 2000
+            when 'village' then 1200 else 800 end as footprint
+    from places p
+    join fires f on ST_DWithin(p.geom, f.geom, 0.15)
 )
 select
     p.id, p.name, p.name_ar, p.name_en, p.place_type, p.population,
     p.lng, p.lat, p.wilaya_code,
     w.name as wilaya_name, w.name_ar as wilaya_name_ar,
-    min(ST_Distance(p.geom::geography, f.geom::geography))::int as nearest_m,
-    count(*) as fires_nearby,
-    round(max(f.frp)::numeric, 1) as max_frp_nearby
-from places p
-join fires f on ST_DWithin(p.geom, f.geom, 0.15)
+    min(pf.dist)::int as nearest_m,
+    count(*) filter (where pf.dist <= $1) as fires_nearby,
+    round(max(pf.frp) filter (where pf.dist <= $1)::numeric, 1) as max_frp_nearby,
+    count(*) filter (where pf.dist <= pf.footprint) as on_hits,
+    round(coalesce(sum(pf.frp) filter (where pf.dist <= pf.footprint), 0)::numeric, 1) as on_frp,
+    count(distinct pf.d) filter (where pf.dist <= pf.footprint) as on_days
+from pf
+join places p on p.id = pf.id
 left join wilayas w on w.code = p.wilaya_code
-group by p.id, w.name, w.name_ar
-having min(ST_Distance(p.geom::geography, f.geom::geography)) <= $1::float8
-order by nearest_m
+group by p.id, p.name, p.name_ar, p.name_en, p.place_type, p.population,
+         p.lng, p.lat, p.wilaya_code, w.name, w.name_ar
+having min(pf.dist) <= $1::float8
 """
+
+# A community is "severe" (likely damaged) when confirmed fire landed on its
+# footprint across at least this many satellite passes — not a single, possibly
+# adjacent, pixel. Two+ passes = the fire genuinely engaged the settlement.
+_SEVERE_MIN_HITS = 2
+# Cap the severe list so the UI focuses on the worst-hit communities.
+_SEVERE_CAP = 100
 
 
 async def communities_at_risk(
     immediate_m: int = 3000, warning_m: int = 10000, window_hours: int = 96
 ) -> dict:
     """Inhabited places within `warning_m` of a confirmed fire in the last
-    `window_hours` (default 4 days — surfaces recently-affected communities that
-    still need help, not only those next to a currently-active fire), tiered
-    'immediate' (<= immediate_m) vs 'warning'."""
+    `window_hours` (default 4 days). Tiered:
+      * severe   — fire landed ON the settlement across >= _SEVERE_MIN_HITS passes
+                   (likely damaged); ranked by a damage score (cumulative FRP on
+                   the settlement, weighted by days it burned), capped to top 100.
+      * immediate — nearest fire within immediate_m.
+      * warning   — within warning_m.
+    """
+    import math
     from datetime import datetime, timezone
 
     pool = await get_pool()
@@ -201,11 +231,13 @@ async def communities_at_risk(
         rows = await conn.fetch(_AT_RISK_SQL, float(warning_m), int(window_hours))
 
     communities = []
-    immediate = 0
     for r in rows:
-        tier = "immediate" if r["nearest_m"] <= immediate_m else "warning"
-        if tier == "immediate":
-            immediate += 1
+        on_hits = r["on_hits"] or 0
+        on_frp = float(r["on_frp"] or 0)
+        on_days = r["on_days"] or 0
+        # Damage score: total fire power that fell on the settlement, amplified by
+        # how many days it kept burning there (persistence => more destruction).
+        damage_score = round(on_frp * (1 + math.log1p(on_days)), 1) if on_hits >= _SEVERE_MIN_HITS else 0.0
         communities.append({
             "id": r["id"],
             "name": r["name"],
@@ -221,8 +253,35 @@ async def communities_at_risk(
             "nearest_fire_m": r["nearest_m"],
             "fires_nearby": r["fires_nearby"],
             "max_frp_nearby": float(r["max_frp_nearby"]) if r["max_frp_nearby"] is not None else None,
-            "tier": tier,
+            "on_hits": on_hits,
+            "on_frp": on_frp,
+            "on_days": on_days,
+            "damage_score": damage_score,
         })
+
+    # Flag the worst-hit communities as "severe": on-settlement fire over >= N
+    # passes, then the top _SEVERE_CAP by damage score. The rest tier by distance.
+    severe_ids = {
+        c["id"] for c in sorted(
+            (c for c in communities if c["on_hits"] >= _SEVERE_MIN_HITS),
+            key=lambda c: c["damage_score"], reverse=True,
+        )[:_SEVERE_CAP]
+    }
+    severe = immediate = warning = 0
+    for c in communities:
+        if c["id"] in severe_ids:
+            c["tier"] = "severe"; severe += 1
+        elif c["nearest_fire_m"] <= immediate_m:
+            c["tier"] = "immediate"; immediate += 1
+        else:
+            c["tier"] = "warning"; warning += 1
+
+    # Order: severe first (worst damage first), then by nearest fire.
+    tier_rank = {"severe": 0, "immediate": 1, "warning": 2}
+    communities.sort(key=lambda c: (
+        tier_rank[c["tier"]],
+        -c["damage_score"] if c["tier"] == "severe" else c["nearest_fire_m"],
+    ))
 
     return {
         "enabled": True,
@@ -230,12 +289,13 @@ async def communities_at_risk(
         "immediate_m": immediate_m,
         "warning_m": warning_m,
         "window_hours": window_hours,
-        # This is a satellite-derived early-warning aid, not an official evacuation
-        # order — surfaced so the frontend always shows the disclaimer.
+        # This is a satellite-derived early-warning / impact estimate, not an
+        # official damage assessment — surfaced so the frontend shows the disclaimer.
         "advisory": True,
         "counts": {
+            "severe": severe,
             "immediate": immediate,
-            "warning": len(communities) - immediate,
+            "warning": warning,
             "total": len(communities),
         },
         "communities": communities,

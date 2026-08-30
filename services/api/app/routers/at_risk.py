@@ -15,7 +15,7 @@ from ..places import communities_at_risk
 
 router = APIRouter()
 
-_CACHE_KEY = "at_risk:v2"  # v2 = 4-day window (was 24h)
+_CACHE_KEY = "at_risk:v3"  # v3 = + severe (likely-damaged) tier & damage score
 _TTL = 300  # 5 min — detections refresh on the ~15-min ingest; keeps it near-live
 
 
