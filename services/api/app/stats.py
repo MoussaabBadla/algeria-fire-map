@@ -8,9 +8,15 @@ from __future__ import annotations
 
 import logging
 
+from .cache import get_cache
 from .db import get_pool
 
 log = logging.getLogger("stats")
+
+# Cache keys for the /stats responses (defined here so refresh_stats can bust
+# them after a rebuild; the router imports these too, avoiding a circular import).
+STATS_NATIONAL_KEY = "stats:national:v5"
+STATS_WILAYA_PREFIX = "stats:wilaya:"
 
 _REFRESH_SQL = """
 insert into stats_monthly (wilaya_code, year, month, detections, confirmed, sum_frp, max_frp)
@@ -34,13 +40,19 @@ on conflict (wilaya_code, year, month) do update set
 
 
 async def refresh_stats() -> int:
-    """Recompute the monthly rollup. Returns rows in stats_monthly."""
+    """Recompute the monthly rollup and invalidate the cached /stats responses,
+    so the stats page reflects new detections immediately after an ingest/backfill
+    instead of serving a stale body until the TTL lapses. Returns rows in stats_monthly."""
     pool = await get_pool()
     if pool is None:
         return 0
     async with pool.acquire() as conn:
         await conn.execute(_REFRESH_SQL)
-        return int(await conn.fetchval("select count(*) from stats_monthly") or 0)
+        rows = int(await conn.fetchval("select count(*) from stats_monthly") or 0)
+    cache = get_cache()
+    await cache.delete(STATS_NATIONAL_KEY)
+    await cache.delete_prefix(STATS_WILAYA_PREFIX)
+    return rows
 
 
 # FRP intensity buckets — aligned with the frontend fire-power legend (MW).

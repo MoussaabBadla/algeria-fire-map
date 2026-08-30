@@ -33,6 +33,14 @@ class _MemoryCache:
     async def set(self, key: str, value: str, ttl: int) -> None:
         self._store[key] = (time.time() + ttl, value)
 
+    async def delete(self, *keys: str) -> None:
+        for k in keys:
+            self._store.pop(k, None)
+
+    async def delete_prefix(self, prefix: str) -> None:
+        for k in [k for k in self._store if k.startswith(prefix)]:
+            self._store.pop(k, None)
+
 
 class _RedisCache:
     def __init__(self, url: str) -> None:
@@ -47,6 +55,20 @@ class _RedisCache:
     async def set(self, key: str, value: str, ttl: int) -> None:
         try:
             await self._redis.set(key, value, ex=ttl)
+        except Exception:
+            pass
+
+    async def delete(self, *keys: str) -> None:
+        try:
+            if keys:
+                await self._redis.delete(*keys)
+        except Exception:
+            pass
+
+    async def delete_prefix(self, prefix: str) -> None:
+        try:
+            async for key in self._redis.scan_iter(match=f"{prefix}*"):
+                await self._redis.delete(key)
         except Exception:
             pass
 

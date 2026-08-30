@@ -11,12 +11,12 @@ import json
 from fastapi import APIRouter, Header, Path, Response
 
 from ..cache import get_cache
-from ..stats import national_summary, wilaya_summary
+from ..stats import STATS_NATIONAL_KEY, STATS_WILAYA_PREFIX, national_summary, wilaya_summary
 
 router = APIRouter()
 
-_CACHE_KEY = "stats:national:v5"  # v4 = + seasonal_curve (signature chart)
-_TTL = 900  # 15 min; the underlying data changes only a few times/day
+_CACHE_KEY = STATS_NATIONAL_KEY  # shared with stats.py so refresh_stats can bust it
+_TTL = 900  # 15 min; refresh_stats also busts the cache on each ingest/backfill
 
 
 def _etag(payload: str) -> str:
@@ -45,7 +45,7 @@ async def get_wilaya_stats(
     if_none_match: str | None = Header(default=None),
 ) -> Response:
     cache = get_cache()
-    key = f"stats:wilaya:{code}:v3"
+    key = f"{STATS_WILAYA_PREFIX}{code}:v3"
     body = await cache.get(key)
     if body is None:
         body = json.dumps(await wilaya_summary(code), separators=(",", ":"))
