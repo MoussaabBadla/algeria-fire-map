@@ -83,9 +83,10 @@ interface Props {
   showAtRisk: boolean;
 }
 
-// Tier colour: immediate (fire within ~3 km) red, warning (within ~10 km) amber.
+// Tier colour: severe/likely-damaged dark red, immediate red, warning amber.
 const ATRISK_COLOR: maplibregl.ExpressionSpecification = [
-  "match", ["get", "tier"], "immediate", "#ef4444", "warning", "#f59e0b", "#f59e0b",
+  "match", ["get", "tier"],
+  "severe", "#b91c1c", "immediate", "#ef4444", "warning", "#f59e0b", "#f59e0b",
 ];
 
 // Inhabited places near recent fires → point GeoJSON.
@@ -384,11 +385,11 @@ export default function FireMap({ data, selected, onSelect, styleKey, isMobile, 
       paint: {
         "circle-radius": [
           "interpolate", ["linear"], ["zoom"],
-          5, ["match", ["get", "tier"], "immediate", 13, 9],
-          10, ["match", ["get", "tier"], "immediate", 26, 18],
+          5, ["match", ["get", "tier"], "severe", 16, "immediate", 13, 9],
+          10, ["match", ["get", "tier"], "severe", 32, "immediate", 26, 18],
         ],
         "circle-color": ATRISK_COLOR,
-        "circle-opacity": 0.16,
+        "circle-opacity": ["match", ["get", "tier"], "severe", 0.22, 0.16],
         "circle-blur": 0.6,
       },
     });
@@ -400,13 +401,13 @@ export default function FireMap({ data, selected, onSelect, styleKey, isMobile, 
       paint: {
         "circle-radius": [
           "interpolate", ["linear"], ["zoom"],
-          5, ["match", ["get", "tier"], "immediate", 5, 3.5],
-          10, ["match", ["get", "tier"], "immediate", 9, 6],
+          5, ["match", ["get", "tier"], "severe", 6.5, "immediate", 5, 3.5],
+          10, ["match", ["get", "tier"], "severe", 12, "immediate", 9, 6],
         ],
         "circle-color": ATRISK_COLOR,
         "circle-opacity": 0.95,
         "circle-stroke-color": "#ffffff",
-        "circle-stroke-width": ["match", ["get", "tier"], "immediate", 1.6, 1],
+        "circle-stroke-width": ["match", ["get", "tier"], "severe", 2.2, "immediate", 1.6, 1],
         "circle-stroke-opacity": 0.9,
       },
     });
@@ -584,7 +585,8 @@ export default function FireMap({ data, selected, onSelect, styleKey, isMobile, 
         place_type: string; population: number | null;
         wilaya_name: string | null; wilaya_name_ar: string | null;
         nearest_fire_m: number; fires_nearby: number; max_frp_nearby: number | null;
-        tier: "immediate" | "warning";
+        on_hits: number; on_frp: number; on_days: number;
+        tier: "severe" | "immediate" | "warning";
       };
       const [lng, lat] = (f.geometry as GeoJSON.Point).coordinates as [number, number];
       const tr = tRef.current;
@@ -592,25 +594,33 @@ export default function FireMap({ data, selected, onSelect, styleKey, isMobile, 
       const dir = dirFor(loc);
       const name = (loc === "ar" ? p.name_ar : p.name_en) || p.name;
       const wname = (loc === "ar" ? p.wilaya_name_ar : p.wilaya_name) || "";
-      const color = p.tier === "immediate" ? "#ef4444" : "#f59e0b";
-      const tierLabel = p.tier === "immediate" ? tr("atRisk.immediate") : tr("atRisk.warning");
+      const color = p.tier === "severe" ? "#b91c1c" : p.tier === "immediate" ? "#ef4444" : "#f59e0b";
+      const tierLabel = p.tier === "severe" ? tr("atRisk.severe") : p.tier === "immediate" ? tr("atRisk.immediate") : tr("atRisk.warning");
       const m = p.nearest_fire_m;
       const dist = m < 1000 ? tr("atRisk.metres", { n: String(Math.round(m)) }) : tr("atRisk.km", { n: (m / 1000).toFixed(1) });
       const placeType = tr(`atRisk.placeType.${p.place_type}`);
       const row = (label: string, val: string) =>
         `<div style="display:flex;justify-content:space-between;gap:14px;padding:2px 0;font-size:12px"><span style="color:#666">${label}</span><span style="font-weight:600;color:#111">${val}</span></div>`;
+      // Severe = fire reached the settlement: lead with the damage evidence.
+      const detail = p.tier === "severe"
+        ? row(tr("atRisk.firePasses"), tr("atRisk.passesOverDays", { hits: String(p.on_hits), days: String(p.on_days) }))
+          + row(tr("atRisk.firePower"), `${Math.round(p.on_frp)} MW`)
+          + row(tr("atRisk.nearestFire"), dist)
+        : row(tr("atRisk.nearestFire"), dist)
+          + row(tr("atRisk.firesNearby"), String(p.fires_nearby))
+          + row(tr("incident.peakPower"), p.max_frp_nearby != null ? `${Math.round(p.max_frp_nearby)} MW` : "—");
+      const gmaps = `https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}`;
       const html = `
-        <div dir="${dir}" style="font:13px system-ui,sans-serif;min-width:210px;color:#111;text-align:start">
+        <div dir="${dir}" style="font:13px system-ui,sans-serif;min-width:216px;color:#111;text-align:start">
           <div style="display:flex;justify-content:space-between;align-items:center;gap:10px">
             <div style="font-weight:700;font-size:14px">${name}</div>
             <span style="font-size:11px;font-weight:700;color:${color}">● ${tierLabel}</span>
           </div>
           <div style="color:#777;font-size:11px;margin-bottom:8px">${placeType}${wname ? ` · ${wname}` : ""}</div>
-          ${row(tr("atRisk.nearestFire"), dist)}
-          ${row(tr("atRisk.firesNearby"), String(p.fires_nearby))}
-          ${row(tr("incident.peakPower"), p.max_frp_nearby != null ? `${Math.round(p.max_frp_nearby)} MW` : "—")}
+          ${detail}
           ${p.population ? row(tr("atRisk.population"), p.population.toLocaleString(loc === "ar" ? "ar-DZ" : "en-US")) : ""}
-          <div style="margin-top:8px;padding-top:7px;border-top:1px solid #eee;color:#999;font-size:10.5px;line-height:1.45">${tr("atRisk.advisoryShort")}</div>
+          <a href="${gmaps}" target="_blank" rel="noopener noreferrer" style="display:flex;align-items:center;justify-content:center;gap:6px;margin-top:9px;padding:9px;border-radius:8px;background:${color};color:#fff;font-weight:700;font-size:12.5px;text-decoration:none"><svg width="13" height="13" viewBox="0 0 24 24" fill="#fff" style="flex-shrink:0"><path d="M2 21l21-9L2 3v7l15 2-15 2z"/></svg>${tr("atRisk.directions")}</a>
+          <div style="margin-top:7px;color:#999;font-size:10.5px;line-height:1.45">${tr("atRisk.advisoryShort")}</div>
         </div>`;
       new maplibregl.Popup({ closeButton: true, maxWidth: "260px" }).setLngLat([lng, lat]).setHTML(html).addTo(map);
     });

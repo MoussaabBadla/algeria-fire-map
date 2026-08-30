@@ -251,7 +251,7 @@ export async function fetchRisk(url: string): Promise<RiskData> {
 }
 
 // ── Communities at risk (inhabited places near recent fires) ──────────────────
-export type RiskTier = "immediate" | "warning";
+export type RiskTier = "severe" | "immediate" | "warning";
 
 export interface AtRiskCommunity {
   id: number;
@@ -268,6 +268,10 @@ export interface AtRiskCommunity {
   nearest_fire_m: number;
   fires_nearby: number;
   max_frp_nearby: number | null;
+  on_hits: number;
+  on_frp: number;
+  on_days: number;
+  damage_score: number;
   tier: RiskTier;
 }
 
@@ -278,7 +282,7 @@ export interface AtRiskData {
   warning_m?: number;
   window_hours?: number;
   advisory?: boolean;
-  counts?: { immediate: number; warning: number; total: number };
+  counts?: { severe: number; immediate: number; warning: number; total: number };
   communities?: AtRiskCommunity[];
 }
 

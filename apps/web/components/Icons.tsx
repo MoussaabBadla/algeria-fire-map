@@ -12,6 +12,14 @@ export function FlameIcon({ size = 20, color = "currentColor" }: { size?: number
   );
 }
 
+export function DirectionsIcon({ size = 14, color = "currentColor" }: { size?: number; color?: string }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill={color} aria-hidden="true" style={{ display: "block" }}>
+      <path d="M2 21 23 12 2 3v7l15 2-15 2z" />
+    </svg>
+  );
+}
+
 export function HomeAlertIcon({ size = 14, color = "currentColor" }: { size?: number; color?: string }) {
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" style={{ display: "block" }}>
