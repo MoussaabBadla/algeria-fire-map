@@ -62,6 +62,20 @@ async def db_healthy() -> bool:
         return False
 
 
+async def latest_detection_at() -> "Optional[datetime]":
+    """Timestamp of the newest detection on record (uses the acq_datetime index,
+    so it stays cheap on the hot /health path). Powers the freshness/staleness
+    signal so a stalled ingest can't hide behind a green status."""
+    pool = await get_pool()
+    if pool is None:
+        return None
+    try:
+        async with pool.acquire() as conn:
+            return await conn.fetchval("select max(acq_datetime) from detections")
+    except Exception:
+        return None
+
+
 # Insert one detection, assigning the nearest wilaya via KNN (<->) on the seeded
 # centroids (matches the frontend's nearest-centroid assignment). Dedup on the
 # unique (satellite, acq_datetime, lat, lng) index — a re-reported pixel is a no-op.
