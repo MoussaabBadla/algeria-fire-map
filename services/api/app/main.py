@@ -17,7 +17,8 @@ from .config import get_settings
 from .db import close_pool, db_healthy, latest_detection_at
 from .grid import seed_grid
 from .ingest import get_last_ingest, ingest_once, shutdown_scheduler, start_scheduler
-from .routers import events, fires, place, risk, stats
+from .places import seed_places
+from .routers import at_risk, events, fires, place, risk, stats
 
 # A day with zero new detections means ingestion has almost certainly stalled
 # (Algeria sees fires or at least ag-burns most days in season, and NRT latency
@@ -59,6 +60,7 @@ app.include_router(place.router, tags=["place"])
 app.include_router(risk.router, tags=["risk"])
 app.include_router(events.router, tags=["events"])
 app.include_router(stats.router, tags=["stats"])
+app.include_router(at_risk.router, tags=["at-risk"])
 
 
 def _require_admin(x_admin_token: str | None) -> None:
@@ -138,3 +140,10 @@ async def admin_seed_grid(x_admin_token: str | None = Header(default=None)) -> d
     """Seed the ML training grid (grid_cells). Idempotent. Guarded like /admin/ingest."""
     _require_admin(x_admin_token)
     return await seed_grid()
+
+
+@app.post("/admin/seed-places", tags=["meta"])
+async def admin_seed_places(x_admin_token: str | None = Header(default=None)) -> dict:
+    """Seed/refresh populated places from OSM (for /at-risk). Idempotent. Guarded."""
+    _require_admin(x_admin_token)
+    return await seed_places()
