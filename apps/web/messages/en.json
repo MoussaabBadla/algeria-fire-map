@@ -29,6 +29,7 @@
     "live": "LIVE",
     "replayBadge": "REPLAY",
     "incidents": "Incidents",
+    "atRisk": "Communities at risk",
     "statistics": "Statistics"
   },
   "incident": {
@@ -42,6 +43,26 @@
     "peakPower": "Peak power",
     "days": "{n} days",
     "hours": "{n}h"
+  },
+  "atRisk": {
+    "title": "Communities at risk",
+    "immediate": "Immediate",
+    "warning": "Warning",
+    "none": "No inhabited places are near a confirmed fire in the last 24 hours.",
+    "nearestFire": "Nearest fire",
+    "firesNearby": "Fires nearby",
+    "population": "Population",
+    "people": "{n} people",
+    "metres": "{n} m",
+    "km": "{n} km",
+    "advisory": "Early warning from satellite fire detections + OpenStreetMap. Not an official evacuation order — for emergencies contact the Protection Civile (14 / 1021).",
+    "advisoryShort": "Satellite-derived early warning — not an official evacuation order.",
+    "placeType": {
+      "city": "City",
+      "town": "Town",
+      "village": "Village",
+      "hamlet": "Hamlet"
+    }
   },
   "legend": {
     "firePowerMw": "Fire power (MW)",

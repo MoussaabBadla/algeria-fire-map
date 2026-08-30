@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import dynamic from "next/dynamic";
 import useSWR from "swr";
-import { fetchFires, fetchRisk, fetchEvents, firesKey, riskKey, eventsKey, type EventCollection, type FireCollection, type FireFeature, type RiskData, type RiskWilaya, type SelectedFire } from "@/lib/api";
+import { fetchFires, fetchRisk, fetchEvents, fetchAtRisk, firesKey, riskKey, eventsKey, atRiskKey, type AtRiskCommunity, type AtRiskData, type EventCollection, type FireCollection, type FireFeature, type RiskData, type RiskWilaya, type SelectedFire } from "@/lib/api";
 import { durationFor, passesFilter, withinAge, type DurationKey } from "@/lib/fire";
 import { rankWilayas, type WilayaCount } from "@/lib/wilayaAssign";
 import type { MapStyleKey } from "@/lib/mapStyles";
@@ -17,6 +17,7 @@ import TimelineScrubber from "./TimelineScrubber";
 import RiskLegend from "./RiskLegend";
 import RiskPanel from "./RiskPanel";
 import LatestFires from "./LatestFires";
+import AtRiskPanel from "./AtRiskPanel";
 
 function MapLoading() {
   const t = useTranslations();
@@ -53,6 +54,8 @@ export default function FireDashboard() {
   const [latestOpen, setLatestOpen] = useState(false);
   const [showRisk, setShowRisk] = useState(false);
   const [showIncidents, setShowIncidents] = useState(false);
+  const [showAtRisk, setShowAtRisk] = useState(false);
+  const [atRiskOpen, setAtRiskOpen] = useState(false);
   const [historyMode, setHistoryMode] = useState(false);
   const [cursor, setCursor] = useState(0);
   const [playing, setPlaying] = useState(false);
@@ -81,6 +84,12 @@ export default function FireDashboard() {
   // Incidents (clustered fire_events) — last 90 days, refreshed on the ingest cadence.
   const { data: incidentsData } = useSWR<EventCollection>(showIncidents ? eventsKey({ days: 90, limit: 1000 }) : null, fetchEvents, {
     refreshInterval: 10 * 60 * 1000,
+    revalidateOnFocus: false,
+    keepPreviousData: true,
+  });
+  // Communities at risk (inhabited places near recent fires) — refreshed frequently.
+  const { data: atRiskData } = useSWR<AtRiskData>(showAtRisk ? atRiskKey() : null, fetchAtRisk, {
+    refreshInterval: 5 * 60 * 1000,
     revalidateOnFocus: false,
     keepPreviousData: true,
   });
@@ -202,15 +211,51 @@ export default function FireDashboard() {
     setRankingOpen(false);
   };
 
+  // Risk / incidents / at-risk are mutually exclusive overlay modes.
   const toggleIncidents = () => {
     setShowIncidents((v) => {
       const next = !v;
       if (next) {
-        setShowRisk(false); // incidents & risk are separate map modes
+        setShowRisk(false);
+        setShowAtRisk(false);
+        setAtRiskOpen(false);
         setSelected(null);
       }
       return next;
     });
+  };
+
+  const toggleRisk = () => {
+    setShowRisk((v) => {
+      const next = !v;
+      if (next) {
+        setShowIncidents(false);
+        setShowAtRisk(false);
+        setAtRiskOpen(false);
+        setSelected(null);
+      }
+      return next;
+    });
+  };
+
+  const toggleAtRisk = () => {
+    setShowAtRisk((v) => {
+      const next = !v;
+      if (next) {
+        setShowRisk(false);
+        setShowIncidents(false);
+        setSelected(null);
+        setAtRiskOpen(true);
+      } else {
+        setAtRiskOpen(false);
+      }
+      return next;
+    });
+  };
+
+  const selectAtRisk = (c: AtRiskCommunity) => {
+    flyTo(c.lng, c.lat, 9);
+    if (isMobile) setAtRiskOpen(false);
   };
 
   const enterHistory = () => {
@@ -220,6 +265,8 @@ export default function FireDashboard() {
     setRankingOpen(false);
     setSelected(null);
     setShowIncidents(false);
+    setShowAtRisk(false);
+    setAtRiskOpen(false);
   };
 
   const exitHistory = () => {
@@ -238,7 +285,7 @@ export default function FireDashboard() {
 
   return (
     <main style={{ position: "fixed", inset: 0, background: "var(--bg)" }}>
-      <FireMap data={displayed} selected={selected} onSelect={setSelected} styleKey={styleKey} isMobile={isMobile} focus={focus} riskData={riskData} showRisk={showRisk} incidents={incidentsData} showIncidents={showIncidents} />
+      <FireMap data={displayed} selected={selected} onSelect={setSelected} styleKey={styleKey} isMobile={isMobile} focus={focus} riskData={riskData} showRisk={showRisk} incidents={incidentsData} showIncidents={showIncidents} atRisk={atRiskData} showAtRisk={showAtRisk} />
 
       <TopBar
         isMobile={isMobile}
@@ -269,9 +316,11 @@ export default function FireDashboard() {
           setRankingOpen(false);
         }}
         showRisk={showRisk}
-        onToggleRisk={() => setShowRisk((v) => !v)}
+        onToggleRisk={toggleRisk}
         showIncidents={showIncidents}
         onToggleIncidents={toggleIncidents}
+        showAtRisk={showAtRisk}
+        onToggleAtRisk={toggleAtRisk}
       />
 
       {!isMobile && (showRisk ? <RiskLegend /> : <Legend />)}
@@ -280,12 +329,17 @@ export default function FireDashboard() {
       {isMobile && latestOpen && <LatestFires fires={latest} onSelect={selectFire} isMobile onClose={() => setLatestOpen(false)} />}
 
       {!isMobile && !selected && !historyMode &&
-        (showRisk ? (
+        (showAtRisk ? (
+          <AtRiskPanel data={atRiskData} onSelect={selectAtRisk} isMobile={false} />
+        ) : showRisk ? (
           <RiskPanel items={riskData?.wilayas ?? []} onSelect={selectRiskWilaya} isMobile={false} />
         ) : (
           <WilayaRanking items={ranking} onSelect={selectWilaya} isMobile={false} />
         ))}
-      {isMobile && rankingOpen &&
+      {isMobile && atRiskOpen && showAtRisk && (
+        <AtRiskPanel data={atRiskData} onSelect={selectAtRisk} isMobile onClose={() => setAtRiskOpen(false)} />
+      )}
+      {isMobile && rankingOpen && !showAtRisk &&
         (showRisk ? (
           <RiskPanel items={riskData?.wilayas ?? []} onSelect={selectRiskWilaya} isMobile onClose={() => setRankingOpen(false)} />
         ) : (

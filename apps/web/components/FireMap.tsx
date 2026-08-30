@@ -3,7 +3,7 @@
 import { useEffect, useRef } from "react";
 import * as maplibregl from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
-import type { EventCollection, FireCollection, RiskData, SelectedFire } from "@/lib/api";
+import type { AtRiskData, EventCollection, FireCollection, RiskData, SelectedFire } from "@/lib/api";
 import { riskColor, riskLabel } from "@/lib/risk";
 import { styleFor, type MapStyleKey } from "@/lib/mapStyles";
 import { useLocale, useTranslations } from "@/lib/i18n/LocaleProvider";
@@ -27,6 +27,9 @@ const INC_HULL_SRC = "incident-hulls";
 const INC_POINT_LAYER = "incident-points";
 const INC_HULL_FILL = "incident-hull-fill";
 const INC_HULL_LINE = "incident-hull-line";
+const ATRISK_SRC = "at-risk";
+const ATRISK_HALO_LAYER = "at-risk-halo";
+const ATRISK_POINT_LAYER = "at-risk-points";
 const MASK_SRC = "mask";
 const BORDER_SRC = "algeria-border";
 
@@ -76,6 +79,40 @@ interface Props {
   showRisk: boolean;
   incidents: EventCollection | undefined;
   showIncidents: boolean;
+  atRisk: AtRiskData | undefined;
+  showAtRisk: boolean;
+}
+
+// Tier colour: immediate (fire within ~3 km) red, warning (within ~10 km) amber.
+const ATRISK_COLOR: maplibregl.ExpressionSpecification = [
+  "match", ["get", "tier"], "immediate", "#ef4444", "warning", "#f59e0b", "#f59e0b",
+];
+
+// Inhabited places near recent fires → point GeoJSON.
+function atRiskGeoJSON(d: AtRiskData | undefined): GeoJSON.FeatureCollection {
+  if (!d?.communities) return EMPTY_FC;
+  return {
+    type: "FeatureCollection",
+    features: d.communities.map((c) => ({
+      type: "Feature",
+      geometry: { type: "Point", coordinates: [c.lng, c.lat] },
+      properties: {
+        id: c.id,
+        name: c.name,
+        name_ar: c.name_ar,
+        name_en: c.name_en,
+        place_type: c.place_type,
+        population: c.population,
+        wilaya_code: c.wilaya_code,
+        wilaya_name: c.wilaya_name,
+        wilaya_name_ar: c.wilaya_name_ar,
+        nearest_fire_m: c.nearest_fire_m,
+        fires_nearby: c.fires_nearby,
+        max_frp_nearby: c.max_frp_nearby,
+        tier: c.tier,
+      },
+    })),
+  };
 }
 
 const EMPTY_FC: GeoJSON.FeatureCollection = { type: "FeatureCollection", features: [] };
@@ -151,7 +188,7 @@ function riskGeoJSON(risk: RiskData | undefined): GeoJSON.FeatureCollection {
   };
 }
 
-export default function FireMap({ data, selected, onSelect, styleKey, isMobile, focus, riskData, showRisk, incidents, showIncidents }: Props) {
+export default function FireMap({ data, selected, onSelect, styleKey, isMobile, focus, riskData, showRisk, incidents, showIncidents, atRisk, showAtRisk }: Props) {
   const t = useTranslations();
   const { locale } = useLocale();
   const isMobileRef = useRef(isMobile);
@@ -164,6 +201,10 @@ export default function FireMap({ data, selected, onSelect, styleKey, isMobile, 
   const showIncidentsRef = useRef(showIncidents);
   incidentsRef.current = incidents;
   showIncidentsRef.current = showIncidents;
+  const atRiskRef = useRef(atRisk);
+  const showAtRiskRef = useRef(showAtRisk);
+  atRiskRef.current = atRisk;
+  showAtRiskRef.current = showAtRisk;
   // The map click handler is bound once; read the latest translator/locale
   // through refs so popups always render in the current language.
   const tRef = useRef<Translator>(t);
@@ -327,6 +368,46 @@ export default function FireMap({ data, selected, onSelect, styleKey, isMobile, 
         "circle-stroke-color": "#ffffff",
         "circle-stroke-width": ["case", ["boolean", ["get", "is_active"], false], 1.4, 0.6],
         "circle-stroke-opacity": 0.85,
+      },
+    });
+
+    // Communities at risk — inhabited places near recent fires. Overlaid ON TOP
+    // of the live fires (you see the fire AND the threatened settlement). A halo
+    // ring (bigger for immediate) plus a point, coloured by tier.
+    const atRiskVis = showAtRiskRef.current ? "visible" : "none";
+    if (!map.getSource(ATRISK_SRC)) map.addSource(ATRISK_SRC, { type: "geojson", data: atRiskGeoJSON(atRiskRef.current) });
+    map.addLayer({
+      id: ATRISK_HALO_LAYER,
+      type: "circle",
+      source: ATRISK_SRC,
+      layout: { visibility: atRiskVis },
+      paint: {
+        "circle-radius": [
+          "interpolate", ["linear"], ["zoom"],
+          5, ["match", ["get", "tier"], "immediate", 13, 9],
+          10, ["match", ["get", "tier"], "immediate", 26, 18],
+        ],
+        "circle-color": ATRISK_COLOR,
+        "circle-opacity": 0.16,
+        "circle-blur": 0.6,
+      },
+    });
+    map.addLayer({
+      id: ATRISK_POINT_LAYER,
+      type: "circle",
+      source: ATRISK_SRC,
+      layout: { visibility: atRiskVis },
+      paint: {
+        "circle-radius": [
+          "interpolate", ["linear"], ["zoom"],
+          5, ["match", ["get", "tier"], "immediate", 5, 3.5],
+          10, ["match", ["get", "tier"], "immediate", 9, 6],
+        ],
+        "circle-color": ATRISK_COLOR,
+        "circle-opacity": 0.95,
+        "circle-stroke-color": "#ffffff",
+        "circle-stroke-width": ["match", ["get", "tier"], "immediate", 1.6, 1],
+        "circle-stroke-opacity": 0.9,
       },
     });
 
@@ -494,6 +575,48 @@ export default function FireMap({ data, selected, onSelect, styleKey, isMobile, 
     map.on("mouseenter", INC_POINT_LAYER, () => (map.getCanvas().style.cursor = "pointer"));
     map.on("mouseleave", INC_POINT_LAYER, () => (map.getCanvas().style.cursor = ""));
 
+    // At-risk community → popup (name, tier, distance to nearest fire, wilaya).
+    map.on("click", ATRISK_POINT_LAYER, (e) => {
+      const f = e.features?.[0];
+      if (!f) return;
+      const p = f.properties as {
+        name: string; name_ar: string | null; name_en: string | null;
+        place_type: string; population: number | null;
+        wilaya_name: string | null; wilaya_name_ar: string | null;
+        nearest_fire_m: number; fires_nearby: number; max_frp_nearby: number | null;
+        tier: "immediate" | "warning";
+      };
+      const [lng, lat] = (f.geometry as GeoJSON.Point).coordinates as [number, number];
+      const tr = tRef.current;
+      const loc = localeRef.current;
+      const dir = dirFor(loc);
+      const name = (loc === "ar" ? p.name_ar : p.name_en) || p.name;
+      const wname = (loc === "ar" ? p.wilaya_name_ar : p.wilaya_name) || "";
+      const color = p.tier === "immediate" ? "#ef4444" : "#f59e0b";
+      const tierLabel = p.tier === "immediate" ? tr("atRisk.immediate") : tr("atRisk.warning");
+      const m = p.nearest_fire_m;
+      const dist = m < 1000 ? tr("atRisk.metres", { n: String(Math.round(m)) }) : tr("atRisk.km", { n: (m / 1000).toFixed(1) });
+      const placeType = tr(`atRisk.placeType.${p.place_type}`);
+      const row = (label: string, val: string) =>
+        `<div style="display:flex;justify-content:space-between;gap:14px;padding:2px 0;font-size:12px"><span style="color:#666">${label}</span><span style="font-weight:600;color:#111">${val}</span></div>`;
+      const html = `
+        <div dir="${dir}" style="font:13px system-ui,sans-serif;min-width:210px;color:#111;text-align:start">
+          <div style="display:flex;justify-content:space-between;align-items:center;gap:10px">
+            <div style="font-weight:700;font-size:14px">${name}</div>
+            <span style="font-size:11px;font-weight:700;color:${color}">● ${tierLabel}</span>
+          </div>
+          <div style="color:#777;font-size:11px;margin-bottom:8px">${placeType}${wname ? ` · ${wname}` : ""}</div>
+          ${row(tr("atRisk.nearestFire"), dist)}
+          ${row(tr("atRisk.firesNearby"), String(p.fires_nearby))}
+          ${row(tr("incident.peakPower"), p.max_frp_nearby != null ? `${Math.round(p.max_frp_nearby)} MW` : "—")}
+          ${p.population ? row(tr("atRisk.population"), p.population.toLocaleString(loc === "ar" ? "ar-DZ" : "en-US")) : ""}
+          <div style="margin-top:8px;padding-top:7px;border-top:1px solid #eee;color:#999;font-size:10.5px;line-height:1.45">${tr("atRisk.advisoryShort")}</div>
+        </div>`;
+      new maplibregl.Popup({ closeButton: true, maxWidth: "260px" }).setLngLat([lng, lat]).setHTML(html).addTo(map);
+    });
+    map.on("mouseenter", ATRISK_POINT_LAYER, () => (map.getCanvas().style.cursor = "pointer"));
+    map.on("mouseleave", ATRISK_POINT_LAYER, () => (map.getCanvas().style.cursor = ""));
+
     return () => {
       map.remove();
       mapRef.current = null;
@@ -562,6 +685,24 @@ export default function FireMap({ data, selected, onSelect, styleKey, isMobile, 
       if (map.getLayer(id)) map.setLayoutProperty(id, "visibility", firesVis);
     }
   }, [showIncidents]);
+
+  // Push at-risk community data.
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !readyRef.current) return;
+    const s = map.getSource(ATRISK_SRC) as maplibregl.GeoJSONSource | undefined;
+    if (s) s.setData(atRiskGeoJSON(atRisk));
+  }, [atRisk]);
+
+  // Toggle at-risk overlay (shown on top of the live fires, no fire hiding).
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !readyRef.current) return;
+    const vis = showAtRisk ? "visible" : "none";
+    for (const id of [ATRISK_HALO_LAYER, ATRISK_POINT_LAYER]) {
+      if (map.getLayer(id)) map.setLayoutProperty(id, "visibility", vis);
+    }
+  }, [showAtRisk]);
 
   // Re-label wilayas when the locale changes (Arabic ⇄ Latin).
   useEffect(() => {

@@ -8,7 +8,7 @@ import StatBadge from "./StatBadge";
 import RiskLegend from "./RiskLegend";
 import LanguageSwitcher from "./LanguageSwitcher";
 import NavMenu from "./NavMenu";
-import { ClockIcon, FlameIcon, GitHubIcon, PinIcon } from "./Icons";
+import { ClockIcon, FlameIcon, GitHubIcon, HomeAlertIcon, PinIcon } from "./Icons";
 
 const REPO_URL = "https://github.com/MoussaabBadla/algeria-fire-map";
 const AUTHOR_URL = "https://github.com/MoussaabBadla";
@@ -33,6 +33,8 @@ interface Props {
   onToggleRisk: () => void;
   showIncidents: boolean;
   onToggleIncidents: () => void;
+  showAtRisk: boolean;
+  onToggleAtRisk: () => void;
 }
 
 type T = ReturnType<typeof useTranslations>;
@@ -129,8 +131,15 @@ const activeToggle: React.CSSProperties = {
   color: "#ff9e3d",
 };
 
+// At-risk is a danger/safety mode — red when active, distinct from the amber toggles.
+const activeAtRisk: React.CSSProperties = {
+  border: "1px solid rgba(239,68,68,0.55)",
+  background: "rgba(239,68,68,0.15)",
+  color: "#ff6b6b",
+};
+
 export default function TopBar(props: Props) {
-  const { isMobile, styleKey, onStyleChange, duration, onDurationChange, historyMode, onEnterHistory, onToggleRanking, onToggleLatest, showRisk, onToggleRisk, showIncidents, onToggleIncidents } = props;
+  const { isMobile, styleKey, onStyleChange, duration, onDurationChange, historyMode, onEnterHistory, onToggleRanking, onToggleLatest, showRisk, onToggleRisk, showIncidents, onToggleIncidents, showAtRisk, onToggleAtRisk } = props;
   const t = useTranslations();
 
   const styleOpts = MAP_STYLES.map((s) => ({ key: s.key, label: t(`mapStyle.${s.key}`) }));
@@ -164,6 +173,9 @@ export default function TopBar(props: Props) {
               <button style={secondaryBtn} onClick={onToggleLatest}>{t("topBar.latest")}</button>
               <button style={secondaryBtn} onClick={onToggleRanking}>{showRisk ? t("topBar.topRisk") : t("topBar.affected")}</button>
             </div>
+            <button style={{ ...secondaryBtn, width: "100%", ...(showAtRisk ? activeAtRisk : {}) }} onClick={onToggleAtRisk}>
+              <HomeAlertIcon size={14} color={showAtRisk ? "#ff6b6b" : "var(--text-secondary)"} /> {t("topBar.atRisk")}{showAtRisk ? ` · ${t("topBar.on")}` : ""}
+            </button>
             <div style={{ display: "flex", gap: 8 }}>
               <button style={{ ...secondaryBtn, ...(showRisk ? activeToggle : {}) }} onClick={onToggleRisk}>{t("topBar.risk")}</button>
               <button style={{ ...secondaryBtn, ...(showIncidents ? activeToggle : {}) }} onClick={onToggleIncidents}>{t("topBar.incidents")}</button>
@@ -205,6 +217,9 @@ export default function TopBar(props: Props) {
       </button>
       <button style={{ ...secondaryBtn, width: "100%", marginBottom: 8, ...(showIncidents ? activeToggle : {}) }} onClick={onToggleIncidents}>
         <PinIcon size={14} color={showIncidents ? "#ff9e3d" : "var(--text-secondary)"} /> {t("topBar.incidents")}{showIncidents ? ` · ${t("topBar.on")}` : ""}
+      </button>
+      <button style={{ ...secondaryBtn, width: "100%", marginBottom: 8, ...(showAtRisk ? activeAtRisk : {}) }} onClick={onToggleAtRisk}>
+        <HomeAlertIcon size={14} color={showAtRisk ? "#ff6b6b" : "var(--text-secondary)"} /> {t("topBar.atRisk")}{showAtRisk ? ` · ${t("topBar.on")}` : ""}
       </button>
       {!historyMode && (
         <button style={{ ...secondaryBtn, width: "100%" }} onClick={onEnterHistory}>

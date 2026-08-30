@@ -249,3 +249,45 @@ export async function fetchRisk(url: string): Promise<RiskData> {
   if (!res.ok) throw new Error("risk fetch failed");
   return res.json();
 }
+
+// ── Communities at risk (inhabited places near recent fires) ──────────────────
+export type RiskTier = "immediate" | "warning";
+
+export interface AtRiskCommunity {
+  id: number;
+  name: string;
+  name_ar: string | null;
+  name_en: string | null;
+  place_type: string;
+  population: number | null;
+  lng: number;
+  lat: number;
+  wilaya_code: number | null;
+  wilaya_name: string | null;
+  wilaya_name_ar: string | null;
+  nearest_fire_m: number;
+  fires_nearby: number;
+  max_frp_nearby: number | null;
+  tier: RiskTier;
+}
+
+export interface AtRiskData {
+  enabled: boolean;
+  generated_at?: string;
+  immediate_m?: number;
+  warning_m?: number;
+  window_hours?: number;
+  advisory?: boolean;
+  counts?: { immediate: number; warning: number; total: number };
+  communities?: AtRiskCommunity[];
+}
+
+export function atRiskKey(): string {
+  return `${API_URL}/at-risk`;
+}
+
+export async function fetchAtRisk(url: string): Promise<AtRiskData> {
+  const res = await fetch(url);
+  if (!res.ok) throw new Error("at-risk fetch failed");
+  return res.json();
+}
