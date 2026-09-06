@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import dynamic from "next/dynamic";
 import Link from "next/link";
 import useSWR from "swr";
@@ -39,6 +39,20 @@ export default function RestoreDashboard() {
   const [focus, setFocus] = useState<Focus>(null);
   const focusNonce = useRef(0);
 
+  // Measure the (full-width) header so the desktop panel can sit just below it,
+  // regardless of how tall the header gets (locale, wrapping, control widths).
+  const headerRef = useRef<HTMLDivElement>(null);
+  const [headerH, setHeaderH] = useState(72);
+  useEffect(() => {
+    const el = headerRef.current;
+    if (!el) return;
+    const ro = new ResizeObserver(() => setHeaderH(el.offsetHeight));
+    ro.observe(el);
+    setHeaderH(el.offsetHeight);
+    return () => ro.disconnect();
+  }, [isMobile]);
+  const desktopPanelTop = 16 + headerH + 8; // header top(16) + its height + gap
+
   const { data } = useSWR<RestorationData>(restorationKey(WINDOW_DAYS[win]), fetchRestoration, {
     refreshInterval: 30 * 60 * 1000,
     revalidateOnFocus: false,
@@ -71,6 +85,7 @@ export default function RestoreDashboard() {
 
       {/* Header */}
       <div
+        ref={headerRef}
         className="glass"
         style={{
           position: "absolute", top: isMobile ? "calc(env(safe-area-inset-top) + 8px)" : 16,
@@ -120,7 +135,7 @@ export default function RestoreDashboard() {
       )}
 
       {/* Panel: always shown on desktop; toggled sheet on mobile */}
-      {!isMobile && <RestorePanel data={data} onSelect={selectScar} isMobile={false} />}
+      {!isMobile && <RestorePanel data={data} onSelect={selectScar} isMobile={false} desktopTop={desktopPanelTop} />}
       {isMobile && panelOpen && (
         <RestorePanel data={data} onSelect={selectScar} isMobile onClose={() => setPanelOpen(false)} />
       )}
