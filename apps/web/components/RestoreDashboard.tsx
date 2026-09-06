@@ -80,7 +80,7 @@ export default function RestoreDashboard() {
         }}
       >
         <div style={{ display: "flex", alignItems: "center", gap: 8, flex: 1, minWidth: 0 }}>
-          <span style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", width: 30, height: 30, borderRadius: 9, background: "#65a30d", flexShrink: 0 }}>
+          <span style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", width: 30, height: 30, borderRadius: 9, background: "#16a34a", flexShrink: 0 }}>
             <SproutIcon size={17} color="#fff" />
           </span>
           <div style={{ minWidth: 0 }}>
@@ -132,8 +132,8 @@ export default function RestoreDashboard() {
           style={{
             position: "absolute", bottom: "calc(env(safe-area-inset-bottom) + 14px)", insetInlineStart: "50%", transform: "translateX(-50%)",
             zIndex: 20, display: "flex", alignItems: "center", gap: 8, padding: "12px 20px", borderRadius: 999,
-            border: "none", background: "#65a30d", color: "#fff", fontSize: 14, fontWeight: 700, cursor: "pointer",
-            boxShadow: "0 6px 20px rgba(101,163,13,0.5)",
+            border: "none", background: "#16a34a", color: "#fff", fontSize: 14, fontWeight: 700, cursor: "pointer",
+            boxShadow: "0 6px 20px rgba(22,163,74,0.5)",
           }}
         >
           <SproutIcon size={17} color="#fff" />

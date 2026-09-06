@@ -12,7 +12,9 @@ interface Props {
   onClose?: () => void;
 }
 
-const PRIORITY_COLOR: Record<string, string> = { high: "#b45309", medium: "#d97706", low: "#f59e0b" };
+// Green recovery ramp, legible on the dark glass panel (high = deepest).
+const PRIORITY_COLOR: Record<string, string> = { high: "#16a34a", medium: "#22c55e", low: "#86efac" };
+const BRAND_GREEN = "#16a34a"; // fixed, readable behind white-text CTAs
 
 function displayCommunity(s: BurnScar, locale: string): string {
   const name = locale === "ar" ? s.nearest_community_ar || s.nearest_community : s.nearest_community;
@@ -86,7 +88,7 @@ export default function RestorePanel({ data, onSelect, isMobile, onClose }: Prop
       {/* Headline: total burned area needing restoration (for the current filter). */}
       {scars.length > 0 && (
         <div style={{ marginBottom: 10 }}>
-          <div style={{ fontSize: isMobile ? 24 : 26, fontWeight: 800, color: "#65a30d", lineHeight: 1.05 }}>
+          <div style={{ fontSize: isMobile ? 24 : 26, fontWeight: 800, color: "#22c55e", lineHeight: 1.05 }}>
             {t("restore.hectares", { n: fmtNum(totalArea) })}
           </div>
           <div style={{ fontSize: 11.5, color: "var(--text-secondary)", marginTop: 2 }}>
@@ -119,7 +121,7 @@ export default function RestorePanel({ data, onSelect, isMobile, onClose }: Prop
 
       {scars.length > 0 && (
         <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 11.5, color: "var(--text-secondary)", marginBottom: 8, lineHeight: 1.4 }}>
-          <span style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", width: 20, height: 20, borderRadius: 6, background: "#65a30d", flexShrink: 0 }}>
+          <span style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", width: 20, height: 20, borderRadius: 6, background: BRAND_GREEN, flexShrink: 0 }}>
             <DirectionsIcon size={12} color="#fff" />
           </span>
           {t("restore.helper")}
@@ -165,7 +167,7 @@ export default function RestorePanel({ data, onSelect, isMobile, onClose }: Prop
                   rel="noopener noreferrer"
                   aria-label={t("restore.directions")}
                   onClick={(e) => e.stopPropagation()}
-                  style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 2, alignSelf: "center", width: isMobile ? 62 : 52, minHeight: isMobile ? 46 : 40, margin: isMobile ? "5px 6px 5px 0" : "4px 4px 4px 0", flexShrink: 0, color: "#fff", background: color, borderRadius: 10, textDecoration: "none" }}
+                  style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 2, alignSelf: "center", width: isMobile ? 62 : 52, minHeight: isMobile ? 46 : 40, margin: isMobile ? "5px 6px 5px 0" : "4px 4px 4px 0", flexShrink: 0, color: "#fff", background: BRAND_GREEN, borderRadius: 10, textDecoration: "none" }}
                 >
                   <DirectionsIcon size={16} color="#fff" />
                   <span style={{ fontSize: 9, fontWeight: 700, lineHeight: 1 }}>{t("restore.go")}</span>

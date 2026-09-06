@@ -25,12 +25,15 @@ const SCAR_POINT_LAYER = "scar-points-layer";
 
 const EMPTY_FC: GeoJSON.FeatureCollection = { type: "FeatureCollection", features: [] };
 
-// Restoration priority → earthy "burned ground" ramp (dark = more urgent to
-// replant). Deliberately distinct from the fire map's bright yellow→red heat.
+// Restoration priority → green recovery ramp (deep green = more urgent to
+// replant, light green = lower). Green/white identity for the recovery map,
+// distinct from the fire map's yellow→red heat.
 const PRIORITY_COLOR: maplibregl.ExpressionSpecification = [
   "match", ["get", "priority"],
-  "high", "#b45309", "medium", "#d97706", "low", "#f59e0b", "#f59e0b",
+  "high", "#15803d", "medium", "#22c55e", "low", "#86efac", "#22c55e",
 ];
+// Fixed, readable brand green for white-text CTAs (directions button).
+const BRAND_GREEN = "#16a34a";
 
 let rtlPluginSet = false;
 function ensureRTLPlugin() {
@@ -250,7 +253,8 @@ export default function RestoreMap({ data, styleKey, isMobile, focus }: Props) {
       const dir = dirFor(loc);
       const wname = (loc === "ar" ? p.wilaya_name_ar : p.wilaya_name) || "";
       const community = (loc === "ar" ? p.nearest_community_ar : p.nearest_community) || p.nearest_community || "";
-      const color = p.priority === "high" ? "#b45309" : p.priority === "medium" ? "#d97706" : "#f59e0b";
+      // Readable-on-white greens for the popup dot; the CTA uses the fixed brand green.
+      const color = p.priority === "high" ? "#15803d" : p.priority === "medium" ? "#16a34a" : "#22c55e";
       const prioLabel = tr(`restore.priority.${p.priority}`);
       const areaStr = Math.round(p.area_ha).toLocaleString(loc === "ar" ? "ar-DZ" : "en-US");
       const when = p.days_since != null
@@ -270,7 +274,7 @@ export default function RestoreMap({ data, styleKey, isMobile, focus }: Props) {
           ${row(tr("restore.burnedWhen"), when)}
           ${row(tr("restore.severity"), p.max_frp != null ? `${Math.round(p.max_frp)} MW` : "—")}
           ${p.population_nearby ? row(tr("restore.populationNearby"), p.population_nearby.toLocaleString(loc === "ar" ? "ar-DZ" : "en-US")) : ""}
-          <a href="${gmaps}" target="_blank" rel="noopener noreferrer" style="display:flex;align-items:center;justify-content:center;gap:6px;margin-top:9px;padding:9px;border-radius:8px;background:${color};color:#fff;font-weight:700;font-size:12.5px;text-decoration:none"><svg width="13" height="13" viewBox="0 0 24 24" fill="#fff" style="flex-shrink:0"><path d="M2 21l21-9L2 3v7l15 2-15 2z"/></svg>${tr("restore.directions")}</a>
+          <a href="${gmaps}" target="_blank" rel="noopener noreferrer" style="display:flex;align-items:center;justify-content:center;gap:6px;margin-top:9px;padding:9px;border-radius:8px;background:${BRAND_GREEN};color:#fff;font-weight:700;font-size:12.5px;text-decoration:none"><svg width="13" height="13" viewBox="0 0 24 24" fill="#fff" style="flex-shrink:0"><path d="M2 21l21-9L2 3v7l15 2-15 2z"/></svg>${tr("restore.directions")}</a>
           <div style="margin-top:7px;color:#999;font-size:10.5px;line-height:1.45">${tr("restore.advisoryShort")}</div>
         </div>`;
       new maplibregl.Popup({ closeButton: true, maxWidth: "260px" }).setLngLat([lng, lat]).setHTML(html).addTo(map);
