@@ -113,9 +113,11 @@ interface Props {
   styleKey: MapStyleKey;
   isMobile: boolean;
   focus: { lng: number; lat: number; zoom: number; nonce: number } | null;
+  selectedId?: number | null;
+  onSelectScar?: (id: number) => void;
 }
 
-export default function RestoreMap({ data, styleKey, isMobile, focus }: Props) {
+export default function RestoreMap({ data, styleKey, isMobile, focus, selectedId = null, onSelectScar }: Props) {
   const t = useTranslations();
   const { locale } = useLocale();
   const containerRef = useRef<HTMLDivElement>(null);
@@ -126,11 +128,14 @@ export default function RestoreMap({ data, styleKey, isMobile, focus }: Props) {
   const isMobileRef = useRef(isMobile);
   const tRef = useRef<Translator>(t);
   const localeRef = useRef<Locale>(locale);
+  const onSelectRef = useRef(onSelectScar);
+  const selectedRef = useRef<number | null>(selectedId);
   dataRef.current = data;
   styleKeyRef.current = styleKey;
   isMobileRef.current = isMobile;
   tRef.current = t;
   localeRef.current = locale;
+  onSelectRef.current = onSelectScar;
 
   function setupLayers(map: maplibregl.Map) {
     const isSatellite = styleKeyRef.current === "satellite";
@@ -195,7 +200,8 @@ export default function RestoreMap({ data, styleKey, isMobile, focus }: Props) {
     });
 
     // Centroid points — radius grows with burned area (bigger job = bigger dot).
-    if (!map.getSource(SCAR_POINT_SRC)) map.addSource(SCAR_POINT_SRC, { type: "geojson", data: scarPoints(dataRef.current) });
+    // promoteId lets us drive the selected highlight via feature-state by scar id.
+    if (!map.getSource(SCAR_POINT_SRC)) map.addSource(SCAR_POINT_SRC, { type: "geojson", data: scarPoints(dataRef.current), promoteId: "id" });
     map.addLayer({
       id: SCAR_POINT_LAYER,
       type: "circle",
@@ -203,16 +209,25 @@ export default function RestoreMap({ data, styleKey, isMobile, focus }: Props) {
       paint: {
         "circle-radius": [
           "interpolate", ["linear"], ["zoom"],
-          5, ["interpolate", ["linear"], ["get", "area_ha"], 0, 3.5, 5000, 11],
-          10, ["interpolate", ["linear"], ["get", "area_ha"], 0, 6, 5000, 24],
+          5, ["*", ["case", ["boolean", ["feature-state", "selected"], false], 1.6, 1.0], ["interpolate", ["linear"], ["get", "area_ha"], 0, 3.5, 5000, 11]],
+          10, ["*", ["case", ["boolean", ["feature-state", "selected"], false], 1.6, 1.0], ["interpolate", ["linear"], ["get", "area_ha"], 0, 6, 5000, 24]],
         ],
         "circle-color": PRIORITY_COLOR,
         "circle-opacity": 0.9,
-        "circle-stroke-color": "#ffffff",
-        "circle-stroke-width": ["match", ["get", "priority"], "high", 1.8, "medium", 1.2, 0.7],
-        "circle-stroke-opacity": 0.85,
+        "circle-stroke-color": ["case", ["boolean", ["feature-state", "selected"], false], "#ffffff", "#ffffff"],
+        "circle-stroke-width": ["case", ["boolean", ["feature-state", "selected"], false], 4, ["match", ["get", "priority"], "high", 1.8, "medium", 1.2, 0.7]],
+        "circle-stroke-opacity": ["case", ["boolean", ["feature-state", "selected"], false], 1, 0.85],
       },
     });
+    // Re-apply the selected highlight after the layer (re)builds.
+    applySelected(map, selectedRef.current, null);
+  }
+
+  // Move the `selected` feature-state from `prev` to `next` (both scar ids).
+  function applySelected(map: maplibregl.Map, next: number | null, prev: number | null) {
+    if (!map.getSource(SCAR_POINT_SRC)) return;
+    if (prev != null) map.setFeatureState({ source: SCAR_POINT_SRC, id: prev }, { selected: false });
+    if (next != null) map.setFeatureState({ source: SCAR_POINT_SRC, id: next }, { selected: true });
   }
 
   useEffect(() => {
@@ -294,6 +309,8 @@ export default function RestoreMap({ data, styleKey, isMobile, focus }: Props) {
       const f = e.features?.[0];
       if (!f) return;
       const [lng, lat] = (f.geometry as GeoJSON.Point).coordinates as [number, number];
+      const id = (f.properties as { id?: number }).id;
+      if (id != null && onSelectRef.current) onSelectRef.current(Number(id));
       openScarPopup(f.properties as never, lng, lat);
     });
     map.on("mouseenter", SCAR_POINT_LAYER, () => (map.getCanvas().style.cursor = "pointer"));
@@ -320,7 +337,7 @@ export default function RestoreMap({ data, styleKey, isMobile, focus }: Props) {
     map.setStyle(styleFor(styleKey), { diff: false });
   }, [styleKey]);
 
-  // Push new scar data.
+  // Push new scar data (setData clears feature-state, so re-apply the selection).
   useEffect(() => {
     const map = mapRef.current;
     if (!map || !readyRef.current) return;
@@ -328,7 +345,17 @@ export default function RestoreMap({ data, styleKey, isMobile, focus }: Props) {
     if (ps) ps.setData(scarPoints(data));
     const hs = map.getSource(SCAR_HULL_SRC) as maplibregl.GeoJSONSource | undefined;
     if (hs) hs.setData(scarHulls(data));
+    applySelected(map, selectedRef.current, null);
   }, [data]);
+
+  // Sync the selected highlight when the selection changes.
+  useEffect(() => {
+    const map = mapRef.current;
+    const prev = selectedRef.current;
+    selectedRef.current = selectedId;
+    if (!map || !readyRef.current) return;
+    applySelected(map, selectedId, prev);
+  }, [selectedId]);
 
   // Re-label wilayas on locale change.
   useEffect(() => {

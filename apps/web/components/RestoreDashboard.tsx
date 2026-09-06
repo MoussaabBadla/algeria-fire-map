@@ -1,10 +1,10 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import dynamic from "next/dynamic";
 import Link from "next/link";
 import useSWR from "swr";
-import { fetchRestoration, restorationKey, type BurnScar, type RestorationData } from "@/lib/api";
+import { fetchRestoration, restorationKey, type BurnScar, type LandCoverClass, type RestorationData } from "@/lib/api";
 import type { MapStyleKey } from "@/lib/mapStyles";
 import { useIsMobile } from "@/lib/useIsMobile";
 import { useTranslations } from "@/lib/i18n/LocaleProvider";
@@ -39,6 +39,11 @@ export default function RestoreDashboard() {
   const [focus, setFocus] = useState<Focus>(null);
   const focusNonce = useRef(0);
 
+  // Filters + selection are owned here so the MAP and the panel stay in sync.
+  const [wilaya, setWilaya] = useState<number | "all">("all");
+  const [landType, setLandType] = useState<LandCoverClass | "all">("all");
+  const [selectedId, setSelectedId] = useState<number | null>(null);
+
   // Measure the (full-width) header so the desktop panel can sit just below it,
   // regardless of how tall the header gets (locale, wrapping, control widths).
   const headerRef = useRef<HTMLDivElement>(null);
@@ -63,10 +68,23 @@ export default function RestoreDashboard() {
     focusNonce.current += 1;
     setFocus({ lng, lat, zoom, nonce: focusNonce.current });
   };
+
+  // Map data follows the active filters (wilaya + land type) — not just the list.
+  const mapData = useMemo<RestorationData | undefined>(() => {
+    if (!data?.scars) return data;
+    let scars = wilaya === "all" ? data.scars : data.scars.filter((s) => s.wilaya_code === wilaya);
+    if (landType !== "all") scars = scars.filter((s) => s.land_cover?.dominant === landType);
+    return { ...data, scars };
+  }, [data, wilaya, landType]);
+
+  // Selecting from the list → highlight on the map + fly to it (close sheet on mobile).
   const selectScar = (s: BurnScar) => {
+    setSelectedId(s.id);
     flyTo(s.lng, s.lat, 9.5);
     if (isMobile) setPanelOpen(false);
   };
+  // Selecting from the map (tap a scar) → highlight, keep the view.
+  const selectFromMap = (id: number) => setSelectedId(id);
 
   const windowOptions: { key: WindowKey; label: string }[] = [
     { key: "30", label: t("restore.window.30") },
@@ -81,7 +99,7 @@ export default function RestoreDashboard() {
 
   return (
     <main style={{ position: "fixed", inset: 0, background: "var(--bg)" }}>
-      <RestoreMap data={data} styleKey={styleKey} isMobile={isMobile} focus={focus} />
+      <RestoreMap data={mapData} styleKey={styleKey} isMobile={isMobile} focus={focus} selectedId={selectedId} onSelectScar={selectFromMap} />
 
       {/* Header */}
       <div
@@ -108,23 +126,27 @@ export default function RestoreDashboard() {
           </div>
         </div>
 
+        {/* Control cluster: kept together so it wraps as a unit on narrow desktop. */}
         {!isMobile && (
-          <>
+          <div style={{ display: "flex", alignItems: "center", gap: 10, flexShrink: 0, whiteSpace: "nowrap" }}>
+            <span style={{ width: 1, height: 26, background: "var(--border)" }} aria-hidden />
             <Segmented options={windowOptions} value={win} onChange={setWin} />
             <Segmented options={styleOptions} value={styleKey} onChange={setStyleKey} />
-          </>
+          </div>
         )}
-        <Link
-          href="/"
-          aria-label={t("restore.toFireMap")}
-          title={t("restore.toFireMap")}
-          style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "7px 11px", borderRadius: 10, border: "1px solid var(--border)", background: "rgba(255,255,255,0.05)", color: "var(--text-secondary)", textDecoration: "none", fontSize: 12.5, fontWeight: 600, flexShrink: 0 }}
-        >
-          <FlameIcon size={15} color="#ff7a1a" />
-          {!isMobile && t("restore.toFireMap")}
-        </Link>
-        <LanguageSwitcher compact />
-        <NavMenu size={isMobile ? 34 : 38} />
+        <div style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }}>
+          <Link
+            href="/"
+            aria-label={t("restore.toFireMap")}
+            title={t("restore.toFireMap")}
+            style={{ display: "inline-flex", alignItems: "center", gap: 6, height: isMobile ? 34 : 38, padding: isMobile ? "0 10px" : "0 13px", borderRadius: 10, border: "1px solid var(--border)", background: "rgba(255,122,26,0.10)", color: "var(--text)", textDecoration: "none", fontSize: 12.5, fontWeight: 600, whiteSpace: "nowrap" }}
+          >
+            <FlameIcon size={15} color="#ff7a1a" />
+            {!isMobile && t("restore.toFireMap")}
+          </Link>
+          <LanguageSwitcher compact />
+          <NavMenu size={isMobile ? 34 : 38} />
+        </div>
       </div>
 
       {/* Mobile window selector row */}
@@ -135,9 +157,17 @@ export default function RestoreDashboard() {
       )}
 
       {/* Panel: always shown on desktop; toggled sheet on mobile */}
-      {!isMobile && <RestorePanel data={data} onSelect={selectScar} isMobile={false} desktopTop={desktopPanelTop} />}
+      {!isMobile && (
+        <RestorePanel
+          data={data} onSelect={selectScar} isMobile={false} desktopTop={desktopPanelTop}
+          wilaya={wilaya} onWilaya={setWilaya} landType={landType} onLandType={setLandType} selectedId={selectedId}
+        />
+      )}
       {isMobile && panelOpen && (
-        <RestorePanel data={data} onSelect={selectScar} isMobile onClose={() => setPanelOpen(false)} />
+        <RestorePanel
+          data={data} onSelect={selectScar} isMobile onClose={() => setPanelOpen(false)}
+          wilaya={wilaya} onWilaya={setWilaya} landType={landType} onLandType={setLandType} selectedId={selectedId}
+        />
       )}
 
       {/* Mobile open-list button */}

@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo } from "react";
 import type { BurnScar, LandCoverClass, RestorationData } from "@/lib/api";
 import { useLocale, useTranslations } from "@/lib/i18n/LocaleProvider";
 import { CloseIcon, DirectionsIcon } from "./Icons";
@@ -17,6 +17,12 @@ interface Props {
   isMobile: boolean;
   onClose?: () => void;
   desktopTop?: number; // measured header bottom + gap, so the panel never overlaps it
+  // Controlled filters (lifted to the dashboard so the MAP follows them too).
+  wilaya: number | "all";
+  onWilaya: (v: number | "all") => void;
+  landType: LandCoverClass | "all";
+  onLandType: (v: LandCoverClass | "all") => void;
+  selectedId?: number | null;
 }
 
 // Green recovery ramp, legible on the dark glass panel (high = deepest).
@@ -32,7 +38,7 @@ function gmapsUrl(s: BurnScar): string {
   return `https://www.google.com/maps/dir/?api=1&destination=${s.lat},${s.lng}`;
 }
 
-export default function RestorePanel({ data, onSelect, isMobile, onClose, desktopTop = 96 }: Props) {
+export default function RestorePanel({ data, onSelect, isMobile, onClose, desktopTop = 96, wilaya, onWilaya, landType, onLandType, selectedId = null }: Props) {
   const t = useTranslations();
   const { locale } = useLocale();
   const ar = locale === "ar";
@@ -41,7 +47,6 @@ export default function RestorePanel({ data, onSelect, isMobile, onClose, deskto
   const fmtNum = (n: number) => Math.round(n).toLocaleString(ar ? "ar-DZ" : "en-US");
 
   // Wilaya filter — only wilayas that actually have scars, most-burned first.
-  const [wilaya, setWilaya] = useState<number | "all">("all");
   const wilayaOptions = useMemo(() => {
     const m = new Map<number, { code: number; name: string; count: number; area: number }>();
     for (const s of scars) {
@@ -58,7 +63,6 @@ export default function RestorePanel({ data, onSelect, isMobile, onClose, deskto
   const activeWilaya = wilaya !== "all" && wilayaOptions.some((w) => w.code === wilaya) ? wilaya : "all";
 
   // Land-type filter — chips for the land covers actually present.
-  const [landType, setLandType] = useState<LandCoverClass | "all">("all");
   const landOptions = useMemo(() => {
     const m = new Map<LandCoverClass, number>();
     for (const s of scars) {
@@ -124,7 +128,7 @@ export default function RestorePanel({ data, onSelect, isMobile, onClose, deskto
       {wilayaOptions.length > 1 && (
         <select
           value={activeWilaya}
-          onChange={(e) => setWilaya(e.target.value === "all" ? "all" : Number(e.target.value))}
+          onChange={(e) => onWilaya(e.target.value === "all" ? "all" : Number(e.target.value))}
           aria-label={t("restore.filterWilaya")}
           style={{ width: "100%", marginBottom: 10, padding: isMobile ? "11px 12px" : "9px 11px", borderRadius: 10, border: "1px solid var(--border)", background: "var(--surface-hover)", color: "var(--text)", fontSize: isMobile ? 14 : 13, fontWeight: 600, cursor: "pointer" }}
         >
@@ -145,7 +149,7 @@ export default function RestorePanel({ data, onSelect, isMobile, onClose, deskto
             return (
               <button
                 key={o.key}
-                onClick={() => setLandType(o.key)}
+                onClick={() => onLandType(o.key)}
                 style={{
                   display: "inline-flex", alignItems: "center", gap: 5, padding: isMobile ? "7px 11px" : "5px 9px",
                   borderRadius: 999, cursor: "pointer", fontSize: 12, fontWeight: 600,
@@ -192,7 +196,7 @@ export default function RestorePanel({ data, onSelect, isMobile, onClose, deskto
               ? (s.days_since <= 1 ? t("restore.burnedRecently") : t("restore.daysAgo", { n: String(s.days_since) }))
               : "";
             return (
-              <div key={s.id} style={{ display: "flex", alignItems: "stretch", gap: 8, borderTop: "1px solid var(--border)", borderInlineStart: `3px solid ${color}`, background: s.priority === "high" ? `${color}12` : "transparent" }}>
+              <div key={s.id} style={{ display: "flex", alignItems: "stretch", gap: 8, borderTop: "1px solid var(--border)", borderInlineStart: `3px solid ${color}`, background: s.id === selectedId ? "rgba(34,197,94,0.20)" : s.priority === "high" ? `${color}12` : "transparent" }}>
                 <button
                   onClick={() => onSelect(s)}
                   style={{ flex: 1, minWidth: 0, textAlign: "start", background: "none", border: "none", cursor: "pointer", padding: isMobile ? "11px 6px 11px 10px" : "8px 4px 8px 8px" }}
