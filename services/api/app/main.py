@@ -17,6 +17,7 @@ from .config import get_settings
 from .db import close_pool, db_healthy, latest_detection_at
 from .grid import seed_grid
 from .ingest import get_last_ingest, ingest_once, shutdown_scheduler, start_scheduler
+from .landcover import gee_configured, get_last_enrich
 from .places import seed_places
 from .routers import at_risk, events, fires, place, restoration, risk, stats
 
@@ -96,6 +97,7 @@ async def health() -> dict:
             settings.ingest_enabled and age_hours is not None and age_hours > _STALE_AFTER_HOURS
         ),
         "last_ingest": get_last_ingest(),
+        "landcover": {"configured": gee_configured(), "last_enrich": get_last_enrich()},
     }
 
 
@@ -148,3 +150,15 @@ async def admin_seed_places(x_admin_token: str | None = Header(default=None)) ->
     """Seed/refresh populated places from OSM (for /at-risk). Idempotent. Guarded."""
     _require_admin(x_admin_token)
     return await seed_places()
+
+
+@app.post("/admin/enrich-landcover", tags=["meta"])
+async def admin_enrich_landcover(
+    limit: int = 200, x_admin_token: str | None = Header(default=None)
+) -> dict:
+    """Manually run the land-cover enrichment sweep (ESA WorldCover via GEE) for up
+    to `limit` un-enriched burn scars. The scheduler also runs this periodically."""
+    _require_admin(x_admin_token)
+    from .landcover import enrich_new_scars
+
+    return await enrich_new_scars(limit=limit)

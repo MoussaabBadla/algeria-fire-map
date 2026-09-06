@@ -79,6 +79,24 @@ def start_scheduler() -> None:
         # immediate first run so a fresh deploy doesn't wait a full interval.
         next_run_time=datetime.now(timezone.utc),
     )
+    # Land-cover enrichment sweep — auto-fills ESA WorldCover for new burn scars.
+    # Only when a GEE service account is configured; otherwise the feature is off.
+    from .landcover import enrich_new_scars, gee_configured
+
+    if gee_configured():
+        _scheduler.add_job(
+            enrich_new_scars,
+            "interval",
+            seconds=settings.landcover_interval_seconds,
+            id="landcover_enrich",
+            max_instances=1,
+            coalesce=True,
+            next_run_time=datetime.now(timezone.utc),
+        )
+        log.info("landcover enrichment scheduled (every %ds)", settings.landcover_interval_seconds)
+    else:
+        log.info("landcover enrichment disabled (GEE_SERVICE_ACCOUNT_JSON unset)")
+
     _scheduler.start()
     log.info("ingest scheduler started (every %ds)", settings.ingest_interval_seconds)
 

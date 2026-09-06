@@ -6,3 +6,4 @@ redis==5.2.1
 shapely==2.0.6
 asyncpg==0.30.0
 apscheduler==3.11.0
+earthengine-api==1.7.42

@@ -47,6 +47,14 @@ class Settings(BaseSettings):
     # ingest is enabled in production.
     admin_token: str = ""
 
+    # --- Google Earth Engine (land-cover enrichment for the restoration map) ---
+    # Full service-account JSON (as a string). When set, the ingest service
+    # auto-enriches new burn scars with ESA WorldCover land cover. Unset = feature off.
+    gee_service_account_json: str = ""
+    # How often to run the land-cover enrichment sweep (seconds) and batch size.
+    landcover_interval_seconds: int = 1800  # 30 min
+    landcover_batch: int = 40
+
     # --- Ingestion scheduler ---
     # Enable the in-process APScheduler ingest loop (set true on the Railway service).
     ingest_enabled: bool = False
