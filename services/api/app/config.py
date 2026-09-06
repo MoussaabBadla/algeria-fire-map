@@ -54,6 +54,9 @@ class Settings(BaseSettings):
     # How often to run the land-cover enrichment sweep (seconds) and batch size.
     landcover_interval_seconds: int = 1800  # 30 min
     landcover_batch: int = 40
+    # Burn-severity (Sentinel-2 dNBR) + slope sweep — heavier, so slower + smaller.
+    severity_interval_seconds: int = 3600  # 1 h
+    severity_batch: int = 8
 
     # --- Ingestion scheduler ---
     # Enable the in-process APScheduler ingest loop (set true on the Railway service).

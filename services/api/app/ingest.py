@@ -94,8 +94,21 @@ def start_scheduler() -> None:
             next_run_time=datetime.now(timezone.utc),
         )
         log.info("landcover enrichment scheduled (every %ds)", settings.landcover_interval_seconds)
+
+        from .severity import enrich_severity
+
+        _scheduler.add_job(
+            enrich_severity,
+            "interval",
+            seconds=settings.severity_interval_seconds,
+            id="severity_enrich",
+            max_instances=1,
+            coalesce=True,
+            next_run_time=datetime.now(timezone.utc),
+        )
+        log.info("severity enrichment scheduled (every %ds)", settings.severity_interval_seconds)
     else:
-        log.info("landcover enrichment disabled (GEE_SERVICE_ACCOUNT_JSON unset)")
+        log.info("landcover/severity enrichment disabled (GEE_SERVICE_ACCOUNT_JSON unset)")
 
     _scheduler.start()
     log.info("ingest scheduler started (every %ds)", settings.ingest_interval_seconds)

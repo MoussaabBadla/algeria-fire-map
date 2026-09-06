@@ -18,6 +18,7 @@ from .db import close_pool, db_healthy, latest_detection_at
 from .grid import seed_grid
 from .ingest import get_last_ingest, ingest_once, shutdown_scheduler, start_scheduler
 from .landcover import gee_configured, get_last_enrich
+from .severity import get_last_severity
 from .places import seed_places
 from .routers import at_risk, events, fires, place, restoration, risk, stats
 
@@ -98,6 +99,7 @@ async def health() -> dict:
         ),
         "last_ingest": get_last_ingest(),
         "landcover": {"configured": gee_configured(), "last_enrich": get_last_enrich()},
+        "severity": {"last_run": get_last_severity()},
     }
 
 
@@ -162,3 +164,15 @@ async def admin_enrich_landcover(
     from .landcover import enrich_new_scars
 
     return await enrich_new_scars(limit=limit)
+
+
+@app.post("/admin/enrich-severity", tags=["meta"])
+async def admin_enrich_severity(
+    limit: int = 8, x_admin_token: str | None = Header(default=None)
+) -> dict:
+    """Manually run the burn-severity sweep (Sentinel-2 dNBR + SRTM slope via GEE)
+    for up to `limit` scars. Heavy; the scheduler also runs it hourly."""
+    _require_admin(x_admin_token)
+    from .severity import enrich_severity
+
+    return await enrich_severity(limit=limit)

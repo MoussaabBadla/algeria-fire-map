@@ -87,10 +87,12 @@ select
     nc.name_ar as nearest_name_ar,
     nc.population as nearest_population,
     ST_Distance(s.centroid::geography, nc.geom::geography)::int as nearest_m,
-    lc.forest_ha, lc.shrub_ha, lc.grass_ha, lc.cropland_ha, lc.other_ha, lc.dominant as land_cover
+    lc.forest_ha, lc.shrub_ha, lc.grass_ha, lc.cropland_ha, lc.other_ha, lc.dominant as land_cover,
+    sv.dnbr, sv.severity as severity_class, sv.slope_deg, sv.erosion_risk
 from scars s
 left join wilayas w on w.code = s.wilaya_code
 left join burn_scar_landcover lc on lc.event_id = s.id
+left join burn_scar_severity sv on sv.event_id = s.id
 left join lateral (
     select name, name_ar, population, geom
     from places
@@ -179,6 +181,17 @@ async def burn_scars(window_days: int = _DEFAULT_WINDOW_DAYS) -> dict:
             "nearest_community_m": r["nearest_m"],
             "population_nearby": r["nearest_population"],
             "land_cover": lc,  # {dominant, forest, shrub, grass, cropland, other%} or null
+            # Burn severity (Sentinel-2 dNBR) + erosion urgency (with slope). None
+            # until enriched; class present only once post-fire imagery exists.
+            "severity": (
+                {
+                    "dnbr": float(r["dnbr"]) if r["dnbr"] is not None else None,
+                    "class": r["severity_class"],
+                    "slope_deg": float(r["slope_deg"]) if r["slope_deg"] is not None else None,
+                    "erosion_risk": r["erosion_risk"],
+                }
+                if r["severity_class"] is not None else None
+            ),
             "_veg_frac": veg_frac,  # internal: for priority weighting (stripped below)
             # priority filled in below (needs the set-wide maxima)
         })
