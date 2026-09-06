@@ -63,7 +63,8 @@ export default function RestorePanel({ data, onSelect, isMobile, onClose }: Prop
 
   const shell: React.CSSProperties = isMobile
     ? { position: "absolute", insetInlineStart: 8, insetInlineEnd: 8, maxWidth: 560, marginInline: "auto", top: "calc(env(safe-area-inset-top) + 78px)", bottom: "calc(env(safe-area-inset-bottom) + 12px)", zIndex: 21, padding: 14, display: "flex", flexDirection: "column" }
-    : { position: "absolute", top: 16, insetInlineEnd: 16, zIndex: 19, padding: 16, width: 308, maxHeight: "calc(100vh - 32px)", display: "flex", flexDirection: "column" };
+    // Desktop: sit BELOW the full-width header (which is at top:16) so they never overlap.
+    : { position: "absolute", top: 88, insetInlineEnd: 16, zIndex: 19, padding: 16, width: 308, maxHeight: "calc(100vh - 104px)", display: "flex", flexDirection: "column" };
 
   const card = (color: string, n: number, label: string) => (
     <div style={{ flex: 1, borderRadius: 10, border: `1px solid ${color}66`, background: `${color}22`, padding: isMobile ? "6px 8px" : "7px 10px", minWidth: 0 }}>
