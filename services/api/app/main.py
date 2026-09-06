@@ -18,7 +18,7 @@ from .db import close_pool, db_healthy, latest_detection_at
 from .grid import seed_grid
 from .ingest import get_last_ingest, ingest_once, shutdown_scheduler, start_scheduler
 from .places import seed_places
-from .routers import at_risk, events, fires, place, risk, stats
+from .routers import at_risk, events, fires, place, restoration, risk, stats
 
 # A day with zero new detections means ingestion has almost certainly stalled
 # (Algeria sees fires or at least ag-burns most days in season, and NRT latency
@@ -61,6 +61,7 @@ app.include_router(risk.router, tags=["risk"])
 app.include_router(events.router, tags=["events"])
 app.include_router(stats.router, tags=["stats"])
 app.include_router(at_risk.router, tags=["at-risk"])
+app.include_router(restoration.router, tags=["restoration"])
 
 
 def _require_admin(x_admin_token: str | None) -> None:

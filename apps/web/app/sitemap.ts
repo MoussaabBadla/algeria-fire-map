@@ -22,6 +22,13 @@ export default function sitemap(): MetadataRoute.Sitemap {
       priority: 0.8,
       alternates: { languages: { ar: `${SITE_URL}/stats`, fr: `${SITE_URL}/stats`, en: `${SITE_URL}/stats` } },
     },
+    {
+      url: `${SITE_URL}/restore`,
+      lastModified: now,
+      changeFrequency: "daily",
+      priority: 0.7,
+      alternates: { languages: { ar: `${SITE_URL}/restore`, fr: `${SITE_URL}/restore`, en: `${SITE_URL}/restore` } },
+    },
     // One indexable page per wilaya (SEO: "wildfire statistics <wilaya>").
     ...WILAYA_CODES.map((code) => ({
       url: `${SITE_URL}/stats/${code}`,

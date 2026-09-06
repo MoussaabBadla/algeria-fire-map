@@ -133,3 +133,13 @@ export function GraphIcon({ size = 15, color = "currentColor" }: { size?: number
     </svg>
   );
 }
+
+export function SproutIcon({ size = 16, color = "currentColor" }: { size?: number; color?: string }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" style={{ display: "block" }}>
+      <path d="M12 21v-8" />
+      <path d="M12 13c0-3-2.5-5-6-5 0 3 2.5 5 6 5Z" />
+      <path d="M12 11c0-3 2.5-5 6-5 0 3-2.5 5-6 5Z" />
+    </svg>
+  );
+}

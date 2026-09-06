@@ -295,3 +295,60 @@ export async function fetchAtRisk(url: string): Promise<AtRiskData> {
   if (!res.ok) throw new Error("at-risk fetch failed");
   return res.json();
 }
+
+// ── Restoration / Green Recovery (recent burn scars needing reforestation) ────
+export type RestorePriority = "high" | "medium" | "low";
+
+export interface BurnScar {
+  id: number;
+  lng: number;
+  lat: number;
+  hull: { type: "Polygon"; coordinates: number[][][] } | null;
+  area_ha: number;
+  detections: number;
+  max_frp: number | null;
+  total_frp: number;
+  first_seen: string | null;
+  last_seen: string | null;
+  days_since: number | null;
+  duration_days: number | null;
+  wilaya_code: number | null;
+  wilaya_name: string | null;
+  wilaya_name_ar: string | null;
+  nearest_community: string | null;
+  nearest_community_ar: string | null;
+  nearest_community_m: number | null;
+  population_nearby: number | null;
+  land_cover: string | null; // Phase 2 (ESA WorldCover)
+  priority_score: number;
+  priority: RestorePriority;
+}
+
+export interface RestoreWilaya {
+  code: number;
+  name: string;
+  name_ar: string;
+  scars: number;
+  area_ha: number;
+  high_priority: number;
+}
+
+export interface RestorationData {
+  enabled: boolean;
+  generated_at?: string;
+  window_days?: number;
+  advisory?: boolean;
+  totals?: { scars: number; area_ha: number; wilayas: number };
+  wilaya_summary?: RestoreWilaya[];
+  scars?: BurnScar[];
+}
+
+export function restorationKey(days: number): string {
+  return `${API_URL}/restoration?days=${days}`;
+}
+
+export async function fetchRestoration(url: string): Promise<RestorationData> {
+  const res = await fetch(url);
+  if (!res.ok) throw new Error("restoration fetch failed");
+  return res.json();
+}
