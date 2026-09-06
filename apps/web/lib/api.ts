@@ -309,6 +309,16 @@ export interface LandCover {
   other: number;
 }
 
+export type SeverityClass = "unburned" | "low" | "moderate" | "high";
+export type ErosionRisk = "low" | "medium" | "high";
+
+export interface BurnSeverity {
+  dnbr: number | null;
+  class: SeverityClass | null;
+  slope_deg: number | null;
+  erosion_risk: ErosionRisk | null;
+}
+
 export interface BurnScar {
   id: number;
   lng: number;
@@ -330,6 +340,7 @@ export interface BurnScar {
   nearest_community_m: number | null;
   population_nearby: number | null;
   land_cover: LandCover | null; // ESA WorldCover (null until enriched)
+  severity: BurnSeverity | null; // Sentinel-2 dNBR + slope (null until enriched)
   priority_score: number;
   priority: RestorePriority;
 }

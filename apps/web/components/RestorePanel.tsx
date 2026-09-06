@@ -216,6 +216,11 @@ export default function RestorePanel({ data, onSelect, isMobile, onClose, deskto
                         {t(`restore.landCover.${s.land_cover.dominant}`)}
                       </span>
                     )}
+                    {s.severity?.erosion_risk === "high" && (
+                      <span style={{ display: "inline-flex", alignItems: "center", flexShrink: 0, fontSize: 10.5, fontWeight: 700, color: "#dc2626", background: "#dc26261f", border: "1px solid #dc262655", borderRadius: 999, padding: "1px 7px" }}>
+                        {t("restore.erosionHigh")}
+                      </span>
+                    )}
                     <span style={{ fontSize: 11.5, color: "var(--text-muted)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", minWidth: 0 }}>
                       {wname}
                       {when ? ` · ${when}` : ""}

@@ -35,6 +35,21 @@
       "shrub": "Shrubland",
       "other": "Other"
     },
+    "dnbrLabel": "Burn severity",
+    "erosionLabel": "Erosion risk",
+    "slopeLabel": "Slope",
+    "erosionHigh": "High erosion",
+    "burnSeverity": {
+      "unburned": "Unburned",
+      "low": "Low",
+      "moderate": "Moderate",
+      "high": "High"
+    },
+    "erosion": {
+      "low": "Low",
+      "medium": "Medium",
+      "high": "High"
+    },
     "filterWilaya": "Filter by wilaya",
     "allWilayas": "All wilayas ({n})",
     "helper": "Tap a burn scar for details and directions to plan replanting.",

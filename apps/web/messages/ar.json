@@ -35,6 +35,21 @@
       "shrub": "أحراش",
       "other": "أخرى"
     },
+    "dnbrLabel": "شدة الحريق",
+    "erosionLabel": "خطر الانجراف",
+    "slopeLabel": "الانحدار",
+    "erosionHigh": "انجراف مرتفع",
+    "burnSeverity": {
+      "unburned": "غير محترقة",
+      "low": "منخفضة",
+      "moderate": "متوسطة",
+      "high": "شديدة"
+    },
+    "erosion": {
+      "low": "منخفض",
+      "medium": "متوسط",
+      "high": "مرتفع"
+    },
     "filterWilaya": "تصفية حسب الولاية",
     "allWilayas": "كل الولايات ({n})",
     "helper": "اضغط على منطقة محترقة لعرض التفاصيل والاتجاهات لتخطيط إعادة الزرع.",
