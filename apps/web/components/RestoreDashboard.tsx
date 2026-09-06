@@ -182,7 +182,7 @@ export default function RestoreDashboard() {
           }}
         >
           <SproutIcon size={17} color="#fff" />
-          {t("restore.showList", { n: data?.totals?.scars ?? 0 })}
+          {t("restore.showList", { n: mapData?.scars?.length ?? data?.totals?.scars ?? 0 })}
         </button>
       )}
     </main>
