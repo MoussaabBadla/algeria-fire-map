@@ -17,7 +17,7 @@ from ..restoration import burn_scars
 
 router = APIRouter()
 
-_CACHE_PREFIX = "restoration:v1"
+_CACHE_PREFIX = "restoration:v2"  # v2 = + land cover (ESA WorldCover) & veg-weighted priority
 _TTL = 1800  # 30 min — fires here are already out; no need to recompute often
 
 

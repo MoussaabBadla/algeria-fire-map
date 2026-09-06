@@ -298,6 +298,16 @@ export async function fetchAtRisk(url: string): Promise<AtRiskData> {
 
 // ── Restoration / Green Recovery (recent burn scars needing reforestation) ────
 export type RestorePriority = "high" | "medium" | "low";
+export type LandCoverClass = "forest" | "cropland" | "grass" | "shrub" | "other";
+
+export interface LandCover {
+  dominant: LandCoverClass;
+  forest: number; // percentages of the scar footprint
+  shrub: number;
+  grass: number;
+  cropland: number;
+  other: number;
+}
 
 export interface BurnScar {
   id: number;
@@ -319,7 +329,7 @@ export interface BurnScar {
   nearest_community_ar: string | null;
   nearest_community_m: number | null;
   population_nearby: number | null;
-  land_cover: string | null; // Phase 2 (ESA WorldCover)
+  land_cover: LandCover | null; // ESA WorldCover (null until enriched)
   priority_score: number;
   priority: RestorePriority;
 }
@@ -338,7 +348,8 @@ export interface RestorationData {
   generated_at?: string;
   window_days?: number;
   advisory?: boolean;
-  totals?: { scars: number; area_ha: number; wilayas: number };
+  totals?: { scars: number; area_ha: number; wilayas: number; enriched?: number };
+  land_cover_counts?: Partial<Record<LandCoverClass, number>>;
   wilaya_summary?: RestoreWilaya[];
   scars?: BurnScar[];
 }

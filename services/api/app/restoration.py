@@ -39,6 +39,9 @@ _MAX_WINDOW_DAYS = 365
 # control before the rains). Tuned to be explainable, not a black box.
 _W_SIZE, _W_SEVERITY, _W_RECENCY = 0.5, 0.3, 0.2
 _PRIORITY_HIGH, _PRIORITY_MEDIUM = 60.0, 30.0
+# Lowest multiplier a fully non-vegetation ("other") scar keeps, so noise is
+# down-ranked but never fully hidden (it may be misclassified).
+_VEG_FLOOR = 0.35
 
 # One SQL round-trip: per burn-scar aggregate + nearest inhabited place (KNN via
 # the places GiST index). Only CONFIRMED events whose fire is OUT — an active
@@ -83,9 +86,11 @@ select
     nc.name as nearest_name,
     nc.name_ar as nearest_name_ar,
     nc.population as nearest_population,
-    ST_Distance(s.centroid::geography, nc.geom::geography)::int as nearest_m
+    ST_Distance(s.centroid::geography, nc.geom::geography)::int as nearest_m,
+    lc.forest_ha, lc.shrub_ha, lc.grass_ha, lc.cropland_ha, lc.other_ha, lc.dominant as land_cover
 from scars s
 left join wilayas w on w.code = s.wilaya_code
+left join burn_scar_landcover lc on lc.event_id = s.id
 left join lateral (
     select name, name_ar, population, geom
     from places
@@ -135,6 +140,24 @@ async def burn_scars(window_days: int = _DEFAULT_WINDOW_DAYS) -> dict:
             hull = json.loads(r["hull_json"]) if r["hull_json"] else None
         except (TypeError, ValueError):
             hull = None
+        # Land cover (ESA WorldCover, enriched via GEE). None until a scar is enriched.
+        lc = None
+        veg_frac = None
+        if r["land_cover"] is not None:
+            forest = float(r["forest_ha"] or 0.0)
+            shrub = float(r["shrub_ha"] or 0.0)
+            grass = float(r["grass_ha"] or 0.0)
+            crop = float(r["cropland_ha"] or 0.0)
+            other = float(r["other_ha"] or 0.0)
+            tot = forest + shrub + grass + crop + other
+            if tot > 0:
+                pct = lambda x: round(100.0 * x / tot)
+                lc = {
+                    "dominant": r["land_cover"],
+                    "forest": pct(forest), "shrub": pct(shrub), "grass": pct(grass),
+                    "cropland": pct(crop), "other": pct(other),
+                }
+                veg_frac = (forest + shrub + grass + crop) / tot
         scars.append({
             "id": r["id"],
             "lng": r["lng"],
@@ -155,7 +178,8 @@ async def burn_scars(window_days: int = _DEFAULT_WINDOW_DAYS) -> dict:
             "nearest_community_ar": r["nearest_name_ar"],
             "nearest_community_m": r["nearest_m"],
             "population_nearby": r["nearest_population"],
-            "land_cover": None,  # Phase 2 (ESA WorldCover)
+            "land_cover": lc,  # {dominant, forest, shrub, grass, cropland, other%} or null
+            "_veg_frac": veg_frac,  # internal: for priority weighting (stripped below)
             # priority filled in below (needs the set-wide maxima)
         })
 
@@ -168,7 +192,14 @@ async def burn_scars(window_days: int = _DEFAULT_WINDOW_DAYS) -> dict:
         sev = math.log1p(s["total_frp"]) / max_sev
         rec = 1.0 - (s["days_since"] / window_days) if s["days_since"] is not None else 0.5
         rec = min(1.0, max(0.0, rec))
-        score = round(100.0 * (_W_SIZE * size + _W_SEVERITY * sev + _W_RECENCY * rec), 1)
+        base = 100.0 * (_W_SIZE * size + _W_SEVERITY * sev + _W_RECENCY * rec)
+        # Vegetation weight: reforestation targets forested/crop/rangeland, so a
+        # scar that's mostly bare/built/water (a desert gas-flare or ag-burn false
+        # scar) is down-ranked. Gentle floor (_VEG_FLOOR) so it's never zeroed and
+        # unenriched scars (veg_frac None) keep their base score.
+        vf = s.pop("_veg_frac")
+        weight = 1.0 if vf is None else (_VEG_FLOOR + (1.0 - _VEG_FLOOR) * vf)
+        score = round(base * weight, 1)
         s["priority_score"] = score
         s["priority"] = _priority(score)
 
@@ -196,6 +227,14 @@ async def burn_scars(window_days: int = _DEFAULT_WINDOW_DAYS) -> dict:
         w["area_ha"] = round(w["area_ha"], 1)
 
     total_area = round(sum(s["area_ha"] for s in scars), 1)
+    # Land-cover counts (dominant class) — powers the UI land-cover filter.
+    land_cover_counts: dict[str, int] = {}
+    enriched = 0
+    for s in scars:
+        if s["land_cover"]:
+            enriched += 1
+            d = s["land_cover"]["dominant"]
+            land_cover_counts[d] = land_cover_counts.get(d, 0) + 1
     return {
         "enabled": True,
         "generated_at": now.isoformat(),
@@ -207,7 +246,9 @@ async def burn_scars(window_days: int = _DEFAULT_WINDOW_DAYS) -> dict:
             "scars": len(scars),
             "area_ha": total_area,
             "wilayas": len(wilaya_summary),
+            "enriched": enriched,
         },
+        "land_cover_counts": land_cover_counts,
         "wilaya_summary": wilaya_summary,
         "scars": scars,
     }
