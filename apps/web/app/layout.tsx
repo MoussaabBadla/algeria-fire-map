@@ -2,6 +2,8 @@ import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono, Noto_Sans_Arabic } from "next/font/google";
 import { cookies } from "next/headers";
 import "./globals.css";
+import { Analytics } from "@vercel/analytics/react";
+import { SpeedInsights } from "@vercel/speed-insights/next";
 import { LocaleProvider } from "@/lib/i18n/LocaleProvider";
 import { DEFAULT_LOCALE, dirFor, isLocale, LOCALE_COOKIE } from "@/lib/i18n/config";
 
@@ -32,6 +34,10 @@ export const metadata: Metadata = {
     // Arabic
     "خريطة حرائق الجزائر", "حرائق الغابات الجزائر", "حرائق الجزائر مباشر", "حرائق القبائل",
     "خريطة الحرائق في الجزائر", "خطر الحرائق الجزائر", "رصد الحرائق بالأقمار الاصطناعية",
+    // Reforestation / land recovery (the /restore map)
+    "reforestation Algeria", "burned areas Algeria", "land restoration Algeria", "afforestation Algeria",
+    "reboisement Algérie", "zones brûlées Algérie", "restauration des forêts Algérie",
+    "إعادة التشجير الجزائر", "المناطق المحروقة الجزائر", "إعادة تأهيل الغابات الجزائر", "إحياء الغطاء النباتي",
   ],
   authors: [{ name: "Moussaab Badla", url: "https://github.com/MoussaabBadla" }],
   creator: "Moussaab Badla",
@@ -118,6 +124,8 @@ const JSON_LD = {
         "Per-wilaya fire-risk (FWI) with a 3-day forecast",
         "Wildfire statistics and history by wilaya",
         "Communities near active fires",
+        "Reforestation & land-recovery map of recent burn scars",
+        "Burned-area land cover (forest / agricultural) via ESA WorldCover",
       ],
       sameAs: [REPO_URL],
       about: { "@type": "Thing", name: "Wildfire monitoring in Algeria" },
@@ -144,6 +152,26 @@ const JSON_LD = {
         geo: { "@type": "GeoShape", box: "18.9 -8.7 37.1 12.0" },
       },
     },
+    {
+      "@type": "Dataset",
+      "@id": `${SITE_URL}/#restoration-dataset`,
+      name: "Algeria recent burn scars for reforestation",
+      description:
+        "Recent burned areas across Algeria (from NASA FIRMS active-fire clusters) with estimated burned area, restoration priority, and ESA WorldCover land cover (forest / cropland / rangeland) — for reforestation and land-recovery planning.",
+      url: `${SITE_URL}/restore`,
+      inLanguage: ["ar", "fr", "en"],
+      isAccessibleForFree: true,
+      license: "https://opensource.org/licenses/MIT",
+      creator: { "@id": `${SITE_URL}/#author` },
+      isBasedOn: ["https://firms.modaps.eosdis.nasa.gov/", "https://esa-worldcover.org/"],
+      keywords: ["reforestation", "burned area", "land restoration", "Algeria", "ESA WorldCover", "wildfire recovery"],
+      variableMeasured: ["burned area", "restoration priority", "land cover"],
+      spatialCoverage: {
+        "@type": "Place",
+        name: "Algeria",
+        geo: { "@type": "GeoShape", box: "18.9 -8.7 37.1 12.0" },
+      },
+    },
   ],
 };
 
@@ -161,6 +189,9 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
       <body className="min-h-full">
         <LocaleProvider initialLocale={locale}>{children}</LocaleProvider>
         <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(JSON_LD) }} />
+        {/* Privacy-friendly visitor analytics + performance metrics (Vercel). */}
+        <Analytics />
+        <SpeedInsights />
       </body>
     </html>
   );

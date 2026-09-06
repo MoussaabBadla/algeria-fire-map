@@ -27,7 +27,15 @@ export async function generateMetadata(): Promise<Metadata> {
   return {
     title,
     description,
-    alternates: { canonical: "/restore" },
+    keywords: [
+      "reforestation Algeria", "burned areas Algeria", "land restoration Algeria", "afforestation Algeria",
+      "reboisement Algérie", "zones brûlées Algérie", "restauration des forêts Algérie",
+      "إعادة التشجير الجزائر", "المناطق المحروقة الجزائر", "إحياء الغطاء النباتي", "إعادة تأهيل الغابات",
+    ],
+    alternates: {
+      canonical: "/restore",
+      languages: { "ar-DZ": "/restore", "fr-DZ": "/restore", en: "/restore", "x-default": "/restore" },
+    },
     openGraph: { title, description, url: "/restore", type: "website" },
   };
 }
