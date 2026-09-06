@@ -13,7 +13,42 @@
     "menu": "Menu",
     "map": "Live map",
     "stats": "Statistics",
+    "restore": "Reforestation",
     "source": "Source code"
+  },
+  "restore": {
+    "title": "Reforestation & Recovery",
+    "subtitle": "Burned land to replant, priority-ranked",
+    "summary": "{scars} burn scars needing restoration",
+    "priority": {
+      "high": "High priority",
+      "medium": "Medium",
+      "low": "Low"
+    },
+    "filterWilaya": "Filter by wilaya",
+    "allWilayas": "All wilayas ({n})",
+    "helper": "Tap a burn scar for details and directions to plan replanting.",
+    "none": "No recent burn scars found in this window.",
+    "burnScar": "Burn scar",
+    "burnedArea": "Burned area",
+    "burnedWhen": "Burned",
+    "severity": "Fire intensity",
+    "populationNearby": "People nearby",
+    "directions": "Directions",
+    "advisoryShort": "Satellite estimate — verify on the ground.",
+    "advisory": "Burned areas are estimated from NASA FIRMS satellite fire detections — a planning aid, not an official burned-area survey. Precise burn mapping (Sentinel-2) is planned.",
+    "hectares": "{n} ha",
+    "ha": "{n} ha",
+    "daysAgo": "{n} days ago",
+    "burnedRecently": "In the last day",
+    "go": "Go",
+    "window": {
+      "30": "1 month",
+      "60": "2 months",
+      "120": "4 months"
+    },
+    "toFireMap": "Fire map",
+    "showList": "Show list ({n})"
   },
   "topBar": {
     "map": "Map",

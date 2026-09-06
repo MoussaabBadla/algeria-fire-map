@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useTranslations } from "@/lib/i18n/LocaleProvider";
-import { MenuIcon, MapIcon, ChartIcon, GitHubIcon, CloseIcon } from "./Icons";
+import { MenuIcon, MapIcon, ChartIcon, GitHubIcon, CloseIcon, SproutIcon } from "./Icons";
 
 const REPO = "https://github.com/MoussaabBadla/algeria-fire-map";
 
@@ -33,6 +33,7 @@ export default function NavMenu({ size = 38 }: { size?: number }) {
   const items = [
     { href: "/", label: t("nav.map"), icon: <MapIcon size={17} /> },
     { href: "/stats", label: t("nav.stats"), icon: <ChartIcon size={17} /> },
+    { href: "/restore", label: t("nav.restore"), icon: <SproutIcon size={17} /> },
   ];
 
   return (
