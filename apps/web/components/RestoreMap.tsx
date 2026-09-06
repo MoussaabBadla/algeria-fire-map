@@ -80,10 +80,18 @@ function scarPoints(d: RestorationData | undefined): GeoJSON.FeatureCollection {
         nearest_community_ar: s.nearest_community_ar,
         nearest_community_m: s.nearest_community_m,
         population_nearby: s.population_nearby,
+        lc_dominant: s.land_cover?.dominant ?? null,
+        lc_forest: s.land_cover?.forest ?? null,
+        lc_cropland: s.land_cover?.cropland ?? null,
       },
     })),
   };
 }
+
+// Land-cover class colours (mirror RestorePanel).
+const LC_COLOR: Record<string, string> = {
+  forest: "#15803d", cropland: "#d97706", grass: "#84cc16", shrub: "#4d7c0f", other: "#78716c",
+};
 
 // Burn-scar footprint hulls → polygon GeoJSON.
 function scarHulls(d: RestorationData | undefined): GeoJSON.FeatureCollection {
@@ -244,6 +252,7 @@ export default function RestoreMap({ data, styleKey, isMobile, focus }: Props) {
         days_since: number | null; wilaya_name: string | null; wilaya_name_ar: string | null;
         nearest_community: string | null; nearest_community_ar: string | null;
         nearest_community_m: number | null; population_nearby: number | null;
+        lc_dominant: string | null; lc_forest: number | null; lc_cropland: number | null;
       },
       lng: number,
       lat: number
@@ -271,6 +280,7 @@ export default function RestoreMap({ data, styleKey, isMobile, focus }: Props) {
           </div>
           <div style="color:#777;font-size:11px;margin-bottom:8px">${tr("restore.burnScar")}${wname ? ` · ${wname}` : ""}</div>
           ${row(tr("restore.burnedArea"), tr("restore.hectares", { n: areaStr }))}
+          ${p.lc_dominant ? `<div style="display:flex;justify-content:space-between;gap:14px;padding:2px 0;font-size:12px"><span style="color:#666">${tr("restore.landCoverLabel")}</span><span style="font-weight:700;color:${LC_COLOR[p.lc_dominant] || "#111"}">${tr(`restore.landCover.${p.lc_dominant}`)}${p.lc_forest ? ` · ${p.lc_forest}% ${tr("restore.landCover.forest").toLowerCase()}` : ""}</span></div>` : ""}
           ${row(tr("restore.burnedWhen"), when)}
           ${row(tr("restore.severity"), p.max_frp != null ? `${Math.round(p.max_frp)} MW` : "—")}
           ${p.population_nearby ? row(tr("restore.populationNearby"), p.population_nearby.toLocaleString(loc === "ar" ? "ar-DZ" : "en-US")) : ""}

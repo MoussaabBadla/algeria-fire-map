@@ -25,6 +25,16 @@
       "medium": "Medium",
       "low": "Low"
     },
+    "landCoverLabel": "Land cover",
+    "filterLandCover": "Land type",
+    "allLandCovers": "All land types",
+    "landCover": {
+      "forest": "Forest",
+      "cropland": "Agricultural",
+      "grass": "Rangeland",
+      "shrub": "Shrubland",
+      "other": "Other"
+    },
     "filterWilaya": "Filter by wilaya",
     "allWilayas": "All wilayas ({n})",
     "helper": "Tap a burn scar for details and directions to plan replanting.",

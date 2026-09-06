@@ -1,9 +1,15 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import type { BurnScar, RestorationData } from "@/lib/api";
+import type { BurnScar, LandCoverClass, RestorationData } from "@/lib/api";
 import { useLocale, useTranslations } from "@/lib/i18n/LocaleProvider";
 import { CloseIcon, DirectionsIcon } from "./Icons";
+
+// Land-cover class colours (forest deep green, agricultural gold, etc.).
+const LC_COLOR: Record<LandCoverClass, string> = {
+  forest: "#15803d", cropland: "#d97706", grass: "#84cc16", shrub: "#4d7c0f", other: "#78716c",
+};
+const LC_ORDER: LandCoverClass[] = ["forest", "cropland", "grass", "shrub", "other"];
 
 interface Props {
   data: RestorationData | undefined;
@@ -50,10 +56,25 @@ export default function RestorePanel({ data, onSelect, isMobile, onClose, deskto
   }, [scars, ar]);
 
   const activeWilaya = wilaya !== "all" && wilayaOptions.some((w) => w.code === wilaya) ? wilaya : "all";
+
+  // Land-type filter — chips for the land covers actually present.
+  const [landType, setLandType] = useState<LandCoverClass | "all">("all");
+  const landOptions = useMemo(() => {
+    const m = new Map<LandCoverClass, number>();
+    for (const s of scars) {
+      const d = s.land_cover?.dominant;
+      if (!d) continue;
+      m.set(d, (m.get(d) ?? 0) + 1);
+    }
+    return LC_ORDER.filter((c) => m.has(c)).map((c) => ({ key: c, count: m.get(c)! }));
+  }, [scars]);
+  const activeLand = landType !== "all" && landOptions.some((o) => o.key === landType) ? landType : "all";
+
   const shown = useMemo(() => {
-    const list = activeWilaya === "all" ? scars : scars.filter((s) => s.wilaya_code === activeWilaya);
+    let list = activeWilaya === "all" ? scars : scars.filter((s) => s.wilaya_code === activeWilaya);
+    if (activeLand !== "all") list = list.filter((s) => s.land_cover?.dominant === activeLand);
     return [...list].sort((a, b) => b.priority_score - a.priority_score);
-  }, [scars, activeWilaya]);
+  }, [scars, activeWilaya, activeLand]);
 
   const counts = { high: 0, medium: 0, low: 0 };
   let totalArea = 0;
@@ -114,6 +135,33 @@ export default function RestorePanel({ data, onSelect, isMobile, onClose, deskto
         </select>
       )}
 
+      {/* Land-type filter chips — only land covers present (forest, agricultural, …). */}
+      {landOptions.length > 1 && (
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 10 }}>
+          {[{ key: "all" as const, count: scars.length }, ...landOptions].map((o) => {
+            const active = activeLand === o.key;
+            const color = o.key === "all" ? "#16a34a" : LC_COLOR[o.key];
+            const label = o.key === "all" ? t("restore.allLandCovers") : t(`restore.landCover.${o.key}`);
+            return (
+              <button
+                key={o.key}
+                onClick={() => setLandType(o.key)}
+                style={{
+                  display: "inline-flex", alignItems: "center", gap: 5, padding: isMobile ? "7px 11px" : "5px 9px",
+                  borderRadius: 999, cursor: "pointer", fontSize: 12, fontWeight: 600,
+                  border: `1px solid ${active ? color : "var(--border)"}`,
+                  background: active ? color : "transparent",
+                  color: active ? "#fff" : "var(--text-secondary)",
+                }}
+              >
+                {o.key !== "all" && <span style={{ width: 8, height: 8, borderRadius: 999, background: active ? "#fff" : color }} />}
+                {label} <span style={{ opacity: 0.8, fontWeight: 500 }}>({o.count})</span>
+              </button>
+            );
+          })}
+        </div>
+      )}
+
       {/* Priority counts: high / medium / low (for the current filter) */}
       <div style={{ display: "flex", gap: 7, marginBottom: 10 }}>
         {card(PRIORITY_COLOR.high, counts.high, t("restore.priority.high"))}
@@ -157,10 +205,17 @@ export default function RestorePanel({ data, onSelect, isMobile, onClose, deskto
                       {t("restore.ha", { n: fmtNum(s.area_ha) })}
                     </span>
                   </div>
-                  {/* Wilaya + when it burned, small. */}
-                  <div style={{ fontSize: 11.5, color: "var(--text-muted)", marginTop: 3, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                    {wname}
-                    {when ? ` · ${when}` : ""}
+                  {/* Wilaya + when it burned, small; plus a land-cover badge. */}
+                  <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 3, minWidth: 0 }}>
+                    {s.land_cover && (
+                      <span style={{ display: "inline-flex", alignItems: "center", gap: 4, flexShrink: 0, fontSize: 10.5, fontWeight: 700, color: LC_COLOR[s.land_cover.dominant], background: `${LC_COLOR[s.land_cover.dominant]}1f`, border: `1px solid ${LC_COLOR[s.land_cover.dominant]}55`, borderRadius: 999, padding: "1px 7px" }}>
+                        {t(`restore.landCover.${s.land_cover.dominant}`)}
+                      </span>
+                    )}
+                    <span style={{ fontSize: 11.5, color: "var(--text-muted)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", minWidth: 0 }}>
+                      {wname}
+                      {when ? ` · ${when}` : ""}
+                    </span>
                   </div>
                 </button>
                 <a

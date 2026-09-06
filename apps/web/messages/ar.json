@@ -25,6 +25,16 @@
       "medium": "متوسطة",
       "low": "منخفضة"
     },
+    "landCoverLabel": "الغطاء الأرضي",
+    "filterLandCover": "نوع الأرض",
+    "allLandCovers": "كل أنواع الأرض",
+    "landCover": {
+      "forest": "غابات",
+      "cropland": "أراضٍ زراعية",
+      "grass": "مراعٍ",
+      "shrub": "أحراش",
+      "other": "أخرى"
+    },
     "filterWilaya": "تصفية حسب الولاية",
     "allWilayas": "كل الولايات ({n})",
     "helper": "اضغط على منطقة محترقة لعرض التفاصيل والاتجاهات لتخطيط إعادة الزرع.",
