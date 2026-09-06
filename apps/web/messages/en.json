@@ -53,9 +53,9 @@
     "burnedRecently": "In the last day",
     "go": "Go",
     "window": {
-      "30": "1 month",
-      "60": "2 months",
-      "120": "4 months"
+      "30": "1 mo",
+      "60": "2 mo",
+      "120": "4 mo"
     },
     "toFireMap": "Fire map",
     "showList": "Show list ({n})"
