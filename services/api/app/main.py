@@ -18,9 +18,10 @@ from .db import close_pool, db_healthy, latest_detection_at
 from .grid import seed_grid
 from .ingest import get_last_ingest, ingest_once, shutdown_scheduler, start_scheduler
 from .landcover import gee_configured, get_last_enrich
+from .predict import get_last_predict, model_available
 from .severity import get_last_severity
 from .places import seed_places
-from .routers import at_risk, events, fires, place, restoration, risk, stats
+from .routers import at_risk, events, fires, forecast, place, restoration, risk, stats
 
 # A day with zero new detections means ingestion has almost certainly stalled
 # (Algeria sees fires or at least ag-burns most days in season, and NRT latency
@@ -64,6 +65,7 @@ app.include_router(events.router, tags=["events"])
 app.include_router(stats.router, tags=["stats"])
 app.include_router(at_risk.router, tags=["at-risk"])
 app.include_router(restoration.router, tags=["restoration"])
+app.include_router(forecast.router, tags=["forecast"])
 
 
 def _require_admin(x_admin_token: str | None) -> None:
@@ -100,6 +102,7 @@ async def health() -> dict:
         "last_ingest": get_last_ingest(),
         "landcover": {"configured": gee_configured(), "last_enrich": get_last_enrich()},
         "severity": {"last_run": get_last_severity()},
+        "forecast": {"model": model_available(), "last_run": get_last_predict()},
     }
 
 
@@ -176,3 +179,15 @@ async def admin_enrich_severity(
     from .severity import enrich_severity
 
     return await enrich_severity(limit=limit)
+
+
+@app.post("/admin/predict", tags=["meta"])
+async def admin_predict(
+    target: str | None = None, x_admin_token: str | None = Header(default=None)
+) -> dict:
+    """Run the ML fire-risk scoring for all grid cells (default: today). Writes
+    cell_risk (served by /forecast). The scheduler also runs it daily."""
+    _require_admin(x_admin_token)
+    from .predict import predict_all
+
+    return await predict_all(target=target)

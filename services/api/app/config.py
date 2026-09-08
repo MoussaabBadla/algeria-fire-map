@@ -57,6 +57,9 @@ class Settings(BaseSettings):
     # Burn-severity (Sentinel-2 dNBR) + slope sweep — heavier, so slower + smaller.
     severity_interval_seconds: int = 3600  # 1 h
     severity_batch: int = 8
+    # ML fire-risk forecast: re-score all grid cells this often (fire history +
+    # season shift slowly; daily is plenty).
+    forecast_interval_seconds: int = 86400  # 24 h
 
     # --- Ingestion scheduler ---
     # Enable the in-process APScheduler ingest loop (set true on the Railway service).

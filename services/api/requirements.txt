@@ -7,3 +7,5 @@ shapely==2.0.6
 asyncpg==0.30.0
 apscheduler==3.11.0
 earthengine-api==1.7.42
+numpy==2.2.1
+lightgbm==4.5.0

@@ -110,6 +110,23 @@ def start_scheduler() -> None:
     else:
         log.info("landcover/severity enrichment disabled (GEE_SERVICE_ACCOUNT_JSON unset)")
 
+    # ML fire-risk forecast — daily scoring of every grid cell (independent of GEE).
+    from .predict import model_available, predict_all
+
+    if model_available():
+        _scheduler.add_job(
+            predict_all,
+            "interval",
+            seconds=settings.forecast_interval_seconds,
+            id="fire_forecast",
+            max_instances=1,
+            coalesce=True,
+            next_run_time=datetime.now(timezone.utc),
+        )
+        log.info("fire-risk forecast scheduled (every %ds)", settings.forecast_interval_seconds)
+    else:
+        log.info("fire-risk forecast disabled (no model file)")
+
     _scheduler.start()
     log.info("ingest scheduler started (every %ds)", settings.ingest_interval_seconds)
 
