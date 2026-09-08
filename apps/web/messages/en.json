@@ -90,7 +90,14 @@
     "replayBadge": "REPLAY",
     "incidents": "Incidents",
     "atRisk": "Communities at risk",
+    "forecast": "AI forecast",
     "statistics": "Statistics"
+  },
+  "forecast": {
+    "title": "Predicted fire risk",
+    "subtitle": "AI model · next-day",
+    "probability": "Fire probability",
+    "advisory": "AI estimate from satellite fire history + terrain — a planning aid, not a guarantee."
   },
   "incident": {
     "title": "Fire incident",

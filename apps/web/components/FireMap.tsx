@@ -3,7 +3,7 @@
 import { useEffect, useRef } from "react";
 import * as maplibregl from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
-import type { AtRiskData, EventCollection, FireCollection, RiskData, SelectedFire } from "@/lib/api";
+import type { AtRiskData, EventCollection, FireCollection, ForecastData, RiskData, SelectedFire } from "@/lib/api";
 import { riskColor, riskLabel } from "@/lib/risk";
 import { styleFor, type MapStyleKey } from "@/lib/mapStyles";
 import { useLocale, useTranslations } from "@/lib/i18n/LocaleProvider";
@@ -30,6 +30,8 @@ const INC_HULL_LINE = "incident-hull-line";
 const ATRISK_SRC = "at-risk";
 const ATRISK_HALO_LAYER = "at-risk-halo";
 const ATRISK_POINT_LAYER = "at-risk-points";
+const FORECAST_SRC = "forecast";
+const FORECAST_LAYER = "forecast-cells";
 const MASK_SRC = "mask";
 const BORDER_SRC = "algeria-border";
 
@@ -81,6 +83,8 @@ interface Props {
   showIncidents: boolean;
   atRisk: AtRiskData | undefined;
   showAtRisk: boolean;
+  forecast: ForecastData | undefined;
+  showForecast: boolean;
 }
 
 // Tier colour: severe/likely-damaged dark red, immediate red, warning amber.
@@ -177,6 +181,12 @@ function wilayaTextField(locale: Locale): maplibregl.ExpressionSpecification {
   return ["get", locale === "ar" ? "name_ar" : "name"];
 }
 
+// ML forecast: cell-risk points already come as GeoJSON from the API.
+function forecastGeoJSON(f: ForecastData | undefined): GeoJSON.FeatureCollection {
+  if (!f?.features) return EMPTY_FC;
+  return f as unknown as GeoJSON.FeatureCollection;
+}
+
 function riskGeoJSON(risk: RiskData | undefined): GeoJSON.FeatureCollection {
   if (!risk) return { type: "FeatureCollection", features: [] };
   return {
@@ -189,7 +199,7 @@ function riskGeoJSON(risk: RiskData | undefined): GeoJSON.FeatureCollection {
   };
 }
 
-export default function FireMap({ data, selected, onSelect, styleKey, isMobile, focus, riskData, showRisk, incidents, showIncidents, atRisk, showAtRisk }: Props) {
+export default function FireMap({ data, selected, onSelect, styleKey, isMobile, focus, riskData, showRisk, incidents, showIncidents, atRisk, showAtRisk, forecast, showForecast }: Props) {
   const t = useTranslations();
   const { locale } = useLocale();
   const isMobileRef = useRef(isMobile);
@@ -206,6 +216,10 @@ export default function FireMap({ data, selected, onSelect, styleKey, isMobile, 
   const showAtRiskRef = useRef(showAtRisk);
   atRiskRef.current = atRisk;
   showAtRiskRef.current = showAtRisk;
+  const forecastRef = useRef(forecast);
+  const showForecastRef = useRef(showForecast);
+  forecastRef.current = forecast;
+  showForecastRef.current = showForecast;
   // The map click handler is bound once; read the latest translator/locale
   // through refs so popups always render in the current language.
   const tRef = useRef<Translator>(t);
@@ -293,6 +307,24 @@ export default function FireMap({ data, selected, onSelect, styleKey, isMobile, 
         "circle-stroke-color": RISK_COLOR_EXPR,
         "circle-stroke-width": 1,
         "circle-stroke-opacity": 0.9,
+      },
+    });
+
+    // ML fire-risk forecast — per grid cell, coloured by predicted risk class.
+    // A separate mode (like risk/incidents), toggled via visibility.
+    if (!map.getSource(FORECAST_SRC)) map.addSource(FORECAST_SRC, { type: "geojson", data: forecastGeoJSON(forecastRef.current) });
+    map.addLayer({
+      id: FORECAST_LAYER,
+      type: "circle",
+      source: FORECAST_SRC,
+      layout: { visibility: showForecastRef.current ? "visible" : "none" },
+      paint: {
+        "circle-radius": ["interpolate", ["linear"], ["zoom"], 5, 6, 9, 15],
+        "circle-color": RISK_COLOR_EXPR,
+        // Faint for low classes so the map isn't a wall of colour; strong for high.
+        "circle-opacity": ["match", ["get", "class"],
+          "very-low", 0.12, "low", 0.22, "moderate", 0.4, "high", 0.55, "very-high", 0.7, "extreme", 0.82, 0.3],
+        "circle-blur": 0.55,
       },
     });
 
@@ -416,8 +448,8 @@ export default function FireMap({ data, selected, onSelect, styleKey, isMobile, 
     const src = map.getSource(FIRES_SRC) as maplibregl.GeoJSONSource | undefined;
     if (src && dataRef.current) src.setData(dataRef.current as unknown as GeoJSON.FeatureCollection);
 
-    // Fires/heat are hidden while in incidents mode.
-    const firesVisible = showIncidentsRef.current ? "none" : "visible";
+    // Fires/heat are hidden while in incidents or forecast mode.
+    const firesVisible = (showIncidentsRef.current || showForecastRef.current) ? "none" : "visible";
     map.setLayoutProperty(HEAT_LAYER, "visibility", firesVisible);
     map.setLayoutProperty(CIRCLE_LAYER, "visibility", firesVisible);
   }
@@ -528,6 +560,30 @@ export default function FireMap({ data, selected, onSelect, styleKey, isMobile, 
     });
     map.on("mouseenter", RISK_LAYER, () => (map.getCanvas().style.cursor = "pointer"));
     map.on("mouseleave", RISK_LAYER, () => (map.getCanvas().style.cursor = ""));
+
+    // Forecast cell → predicted-risk popup (class + probability).
+    map.on("click", FORECAST_LAYER, (e) => {
+      const f = e.features?.[0];
+      if (!f) return;
+      const p = f.properties as { prob: number; class: string };
+      const [lng, lat] = (f.geometry as GeoJSON.Point).coordinates as [number, number];
+      const tr = tRef.current;
+      const dir = dirFor(localeRef.current);
+      const pct = Math.round((typeof p.prob === "number" ? p.prob : Number(p.prob)) * 100);
+      const html = `
+        <div dir="${dir}" style="font:13px system-ui,sans-serif;min-width:180px;color:#111;text-align:start">
+          <div style="font-weight:700;font-size:14px">${tr("forecast.title")}</div>
+          <div style="color:#777;font-size:11px;margin-bottom:8px">${tr("forecast.subtitle")}</div>
+          <div style="display:flex;align-items:baseline;gap:7px">
+            <span style="font-size:24px;font-weight:800;color:${riskColor(p.class)}">${riskLabel(p.class, tr)}</span>
+          </div>
+          <div style="color:#666;font-size:12px;margin-top:6px">${tr("forecast.probability")}: <b>${pct}%</b></div>
+          <div style="margin-top:7px;color:#999;font-size:10.5px;line-height:1.45">${tr("forecast.advisory")}</div>
+        </div>`;
+      new maplibregl.Popup({ closeButton: true, maxWidth: "240px" }).setLngLat([lng, lat]).setHTML(html).addTo(map);
+    });
+    map.on("mouseenter", FORECAST_LAYER, () => (map.getCanvas().style.cursor = "pointer"));
+    map.on("mouseleave", FORECAST_LAYER, () => (map.getCanvas().style.cursor = ""));
 
     // Incident point → incident popup (lifespan, size, intensity, wilaya).
     map.on("click", INC_POINT_LAYER, (e) => {
@@ -671,6 +727,25 @@ export default function FireMap({ data, selected, onSelect, styleKey, isMobile, 
     if (!map || !readyRef.current) return;
     if (map.getLayer(RISK_LAYER)) map.setLayoutProperty(RISK_LAYER, "visibility", showRisk ? "visible" : "none");
   }, [showRisk]);
+
+  // Push forecast data.
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !readyRef.current) return;
+    const src = map.getSource(FORECAST_SRC) as maplibregl.GeoJSONSource | undefined;
+    if (src) src.setData(forecastGeoJSON(forecast));
+  }, [forecast]);
+
+  // Toggle forecast mode: show forecast cells, hide fires/heat while on.
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !readyRef.current) return;
+    if (map.getLayer(FORECAST_LAYER)) map.setLayoutProperty(FORECAST_LAYER, "visibility", showForecast ? "visible" : "none");
+    const firesVis = (showForecast || showIncidents) ? "none" : "visible";
+    for (const id of [HEAT_LAYER, CIRCLE_LAYER]) {
+      if (map.getLayer(id)) map.setLayoutProperty(id, "visibility", firesVis);
+    }
+  }, [showForecast, showIncidents]);
 
   // Push incident data (points + hulls).
   useEffect(() => {

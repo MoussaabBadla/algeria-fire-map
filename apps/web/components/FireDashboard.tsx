@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import dynamic from "next/dynamic";
 import useSWR from "swr";
-import { fetchFires, fetchRisk, fetchEvents, fetchAtRisk, firesKey, riskKey, eventsKey, atRiskKey, type AtRiskCommunity, type AtRiskData, type EventCollection, type FireCollection, type FireFeature, type RiskData, type RiskWilaya, type SelectedFire } from "@/lib/api";
+import { fetchFires, fetchRisk, fetchEvents, fetchAtRisk, fetchForecast, firesKey, riskKey, eventsKey, atRiskKey, forecastKey, type AtRiskCommunity, type AtRiskData, type EventCollection, type FireCollection, type FireFeature, type ForecastData, type RiskData, type RiskWilaya, type SelectedFire } from "@/lib/api";
 import { durationFor, passesFilter, withinAge, type DurationKey } from "@/lib/fire";
 import { rankWilayas, type WilayaCount } from "@/lib/wilayaAssign";
 import type { MapStyleKey } from "@/lib/mapStyles";
@@ -56,6 +56,7 @@ export default function FireDashboard() {
   const [showIncidents, setShowIncidents] = useState(false);
   const [showAtRisk, setShowAtRisk] = useState(false);
   const [atRiskOpen, setAtRiskOpen] = useState(false);
+  const [showForecast, setShowForecast] = useState(false);
   const [historyMode, setHistoryMode] = useState(false);
   const [cursor, setCursor] = useState(0);
   const [playing, setPlaying] = useState(false);
@@ -90,6 +91,12 @@ export default function FireDashboard() {
   // Communities at risk (inhabited places near recent fires) — refreshed frequently.
   const { data: atRiskData } = useSWR<AtRiskData>(showAtRisk ? atRiskKey() : null, fetchAtRisk, {
     refreshInterval: 5 * 60 * 1000,
+    revalidateOnFocus: false,
+    keepPreviousData: true,
+  });
+  // ML fire-risk forecast (per grid cell) — refreshed on the daily cadence.
+  const { data: forecastData } = useSWR<ForecastData>(showForecast ? forecastKey() : null, fetchForecast, {
+    refreshInterval: 60 * 60 * 1000,
     revalidateOnFocus: false,
     keepPreviousData: true,
   });
@@ -219,6 +226,7 @@ export default function FireDashboard() {
         setShowRisk(false);
         setShowAtRisk(false);
         setAtRiskOpen(false);
+        setShowForecast(false);
         setSelected(null);
       }
       return next;
@@ -232,6 +240,7 @@ export default function FireDashboard() {
         setShowIncidents(false);
         setShowAtRisk(false);
         setAtRiskOpen(false);
+        setShowForecast(false);
         setSelected(null);
       }
       return next;
@@ -244,10 +253,25 @@ export default function FireDashboard() {
       if (next) {
         setShowRisk(false);
         setShowIncidents(false);
+        setShowForecast(false);
         setSelected(null);
         setAtRiskOpen(true);
       } else {
         setAtRiskOpen(false);
+      }
+      return next;
+    });
+  };
+
+  const toggleForecast = () => {
+    setShowForecast((v) => {
+      const next = !v;
+      if (next) {
+        setShowRisk(false);
+        setShowIncidents(false);
+        setShowAtRisk(false);
+        setAtRiskOpen(false);
+        setSelected(null);
       }
       return next;
     });
@@ -285,7 +309,7 @@ export default function FireDashboard() {
 
   return (
     <main style={{ position: "fixed", inset: 0, background: "var(--bg)" }}>
-      <FireMap data={displayed} selected={selected} onSelect={setSelected} styleKey={styleKey} isMobile={isMobile} focus={focus} riskData={riskData} showRisk={showRisk} incidents={incidentsData} showIncidents={showIncidents} atRisk={atRiskData} showAtRisk={showAtRisk} />
+      <FireMap data={displayed} selected={selected} onSelect={setSelected} styleKey={styleKey} isMobile={isMobile} focus={focus} riskData={riskData} showRisk={showRisk} incidents={incidentsData} showIncidents={showIncidents} atRisk={atRiskData} showAtRisk={showAtRisk} forecast={forecastData} showForecast={showForecast} />
 
       <TopBar
         isMobile={isMobile}
@@ -321,9 +345,11 @@ export default function FireDashboard() {
         onToggleIncidents={toggleIncidents}
         showAtRisk={showAtRisk}
         onToggleAtRisk={toggleAtRisk}
+        showForecast={showForecast}
+        onToggleForecast={toggleForecast}
       />
 
-      {!isMobile && (showRisk ? <RiskLegend /> : <Legend />)}
+      {!isMobile && ((showRisk || showForecast) ? <RiskLegend /> : <Legend />)}
 
       {!isMobile && !historyMode && <LatestFires fires={latest} onSelect={selectFire} isMobile={false} />}
       {isMobile && latestOpen && <LatestFires fires={latest} onSelect={selectFire} isMobile onClose={() => setLatestOpen(false)} />}

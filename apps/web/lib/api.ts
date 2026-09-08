@@ -365,6 +365,26 @@ export interface RestorationData {
   scars?: BurnScar[];
 }
 
+// ── ML fire-risk forecast (/forecast) ─────────────────────────────────────────
+export interface ForecastFeature {
+  type: "Feature";
+  geometry: { type: "Point"; coordinates: [number, number] };
+  properties: { cell_id: string; prob: number; class: string };
+}
+export interface ForecastData {
+  type: "FeatureCollection";
+  features: ForecastFeature[];
+  properties: { enabled: boolean; day?: string | null; count?: number; advisory?: boolean };
+}
+export function forecastKey(minClass?: string): string {
+  return `${API_URL}/forecast${minClass ? `?min_class=${minClass}` : ""}`;
+}
+export async function fetchForecast(url: string): Promise<ForecastData> {
+  const res = await fetch(url);
+  if (!res.ok) throw new Error("forecast fetch failed");
+  return res.json();
+}
+
 export function restorationKey(days: number): string {
   return `${API_URL}/restoration?days=${days}`;
 }

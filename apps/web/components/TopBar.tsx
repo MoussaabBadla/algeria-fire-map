@@ -8,7 +8,7 @@ import StatBadge from "./StatBadge";
 import RiskLegend from "./RiskLegend";
 import LanguageSwitcher from "./LanguageSwitcher";
 import NavMenu from "./NavMenu";
-import { ClockIcon, FlameIcon, GitHubIcon, HomeAlertIcon, PinIcon } from "./Icons";
+import { ClockIcon, FlameIcon, GitHubIcon, GraphIcon, HomeAlertIcon, PinIcon } from "./Icons";
 
 const REPO_URL = "https://github.com/MoussaabBadla/algeria-fire-map";
 const AUTHOR_URL = "https://github.com/MoussaabBadla";
@@ -35,6 +35,8 @@ interface Props {
   onToggleIncidents: () => void;
   showAtRisk: boolean;
   onToggleAtRisk: () => void;
+  showForecast: boolean;
+  onToggleForecast: () => void;
 }
 
 type T = ReturnType<typeof useTranslations>;
@@ -139,7 +141,7 @@ const activeAtRisk: React.CSSProperties = {
 };
 
 export default function TopBar(props: Props) {
-  const { isMobile, styleKey, onStyleChange, duration, onDurationChange, historyMode, onEnterHistory, onToggleRanking, onToggleLatest, showRisk, onToggleRisk, showIncidents, onToggleIncidents, showAtRisk, onToggleAtRisk } = props;
+  const { isMobile, styleKey, onStyleChange, duration, onDurationChange, historyMode, onEnterHistory, onToggleRanking, onToggleLatest, showRisk, onToggleRisk, showIncidents, onToggleIncidents, showAtRisk, onToggleAtRisk, showForecast, onToggleForecast } = props;
   const t = useTranslations();
 
   const styleOpts = MAP_STYLES.map((s) => ({ key: s.key, label: t(`mapStyle.${s.key}`) }));
@@ -180,9 +182,10 @@ export default function TopBar(props: Props) {
             </button>
             <div style={{ display: "flex", gap: 8 }}>
               <button style={{ ...secondaryBtn, ...(showRisk ? activeToggle : {}) }} onClick={onToggleRisk}>{t("topBar.risk")}</button>
+              <button style={{ ...secondaryBtn, ...(showForecast ? activeToggle : {}) }} onClick={onToggleForecast}>{t("topBar.forecast")}</button>
               <button style={{ ...secondaryBtn, ...(showIncidents ? activeToggle : {}) }} onClick={onToggleIncidents}>{t("topBar.incidents")}</button>
-              <button style={secondaryBtn} onClick={onEnterHistory}><ClockIcon size={15} /> {t("topBar.replay")}</button>
             </div>
+            <button style={secondaryBtn} onClick={onEnterHistory}><ClockIcon size={15} /> {t("topBar.replay")}</button>
             <GitHubLink t={t} />
             <div style={{ fontSize: 9.5, color: "var(--text-muted)", textAlign: "center", opacity: 0.8 }}>
               {t("common.mapAttribution")}
@@ -222,6 +225,9 @@ export default function TopBar(props: Props) {
       </button>
       <button style={{ ...secondaryBtn, width: "100%", marginBottom: 8, ...(showAtRisk ? activeAtRisk : {}) }} onClick={onToggleAtRisk}>
         <HomeAlertIcon size={14} color={showAtRisk ? "#ff6b6b" : "var(--text-secondary)"} /> {t("topBar.atRisk")}{showAtRisk ? ` · ${t("topBar.on")}` : ""}
+      </button>
+      <button style={{ ...secondaryBtn, width: "100%", marginBottom: 8, ...(showForecast ? activeToggle : {}) }} onClick={onToggleForecast}>
+        <GraphIcon size={14} color={showForecast ? "#ff9e3d" : "var(--text-secondary)"} /> {t("topBar.forecast")}{showForecast ? ` · ${t("topBar.on")}` : ""}
       </button>
       {!historyMode && (
         <button style={{ ...secondaryBtn, width: "100%" }} onClick={onEnterHistory}>
