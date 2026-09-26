@@ -36,7 +36,8 @@ An interactive national map that shows where Algeria is burning, right now — a
 - **Fire-risk (FWI)** — per-wilaya fire-danger from the Fire Weather Index, computed from live Open-Meteo weather (the same index EFFIS uses).
 - **Incidents** — raw detections are clustered server-side into fire events (first/last-seen, affected-area hull, peak intensity) for a cleaner "how many fires, how big" view.
 - **Communities at risk** — inhabited places (OSM) near recent confirmed fires, tiered *severely-affected / immediate / warning*, with one-tap Google Maps directions — to help direct aid.
-- **Reforestation & Recovery map** (`/restore`) — recent **burn scars** (fires that are out), priority-ranked for replanting, each labelled **forest / agricultural / rangeland** via ESA WorldCover land cover — so restoration teams know where and what to replant.
+- **Reforestation & Recovery map** (`/restore`) — recent **burn scars** (fires that are out), priority-ranked for replanting, each labelled **forest / agricultural / rangeland** via ESA WorldCover land cover, plus **burn severity** (Sentinel-2 dNBR) and **erosion urgency** (SRTM slope) — so restoration teams know where, what, and how urgently to replant.
+- **AI fire-risk forecast** — a LightGBM model (test AUC ≈ 0.93) predicts **next-day fire probability per 0.1° grid cell** from 25 years of history + terrain + land cover + seasonality; shown as a colour-graded risk surface.
 - **Statistics** — national + per-wilaya wildfire history and seasonal trends (indexable SEO pages), from 25 years of detections.
 - **Map styles** — Dark, Satellite (Esri), Light. Algeria's border is highlighted and neighbours are dimmed to keep focus on the country.
 - **Bilingual** (Arabic / English, full RTL), **mobile-first UX** (bottom sheet + thumb-zone controls), and multilingual SEO.
@@ -103,8 +104,9 @@ npm install && npm run dev        # → http://localhost:3000
 | `GET /events` | Clustered fire incidents (centroid, hull, first/last-seen, intensity) |
 | `GET /stats` · `GET /stats/wilaya/{code}` | National / per-wilaya wildfire statistics |
 | `GET /at-risk` | Inhabited places near recent confirmed fires, tiered by severity |
-| `GET /restoration?days=` | Recent burn scars with area, restoration priority + land cover |
-| `GET /health` | Service status + data-freshness (ingest + land-cover) |
+| `GET /restoration?days=` | Recent burn scars: area, restoration priority, land cover, dNBR severity + erosion |
+| `GET /forecast?min_class=` | ML next-day fire-risk per grid cell (GeoJSON) |
+| `GET /health` | Service status + data-freshness (ingest · land-cover · severity · forecast) |
 
 ## Roadmap
 
@@ -115,9 +117,11 @@ npm install && npm run dev        # → http://localhost:3000
 - [x] Statistics (national + per-wilaya, 25 years)
 - [x] Communities at risk (aid targeting)
 - [x] Reforestation & Recovery map + ESA WorldCover land cover
-- [ ] Sentinel-2 dNBR burn severity + slope-based erosion urgency
-- [ ] ML risk prediction (trained on accumulated data)
+- [x] Sentinel-2 dNBR burn severity + slope-based erosion urgency
+- [x] ML next-day fire-risk prediction (LightGBM, per grid cell)
+- [ ] ML v2 — weather/FWI features · probability calibration · multi-day horizon
 - [ ] Alerts · citizen reporting · IoT sensors
+- [ ] French (FR) translation
 
 ## Contributing
 
